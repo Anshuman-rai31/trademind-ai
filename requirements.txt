@@ -1,0 +1,33 @@
+# ==============================================================================
+# TradeMind - Quantitative Trading Research & Simulation Platform
+# Core Dependencies (Phase 1 Project Setup)
+# ==============================================================================
+
+# PyTorch official CPU wheel repository (enables seamless resolution on Windows)
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Web Application Framework
+Flask>=3.0.0,<4.0.0
+python-dotenv>=1.0.0
+
+# Scientific Computing & Data Processing
+numpy>=1.26.0
+pandas>=2.2.0
+scipy>=1.12.0
+
+# Machine Learning & AI
+scikit-learn>=1.4.0
+torch>=2.2.0
+
+# Reinforcement Learning & Simulation
+gymnasium>=0.29.0
+stable-baselines3>=2.3.0
+
+# Visualization & Interactive Charts
+plotly>=5.20.0
+
+# Market Data & Research Ingestion (Phase 2)
+yfinance>=0.2.38
+
+# Testing & Quality Assurance
+pytest>=8.0.0

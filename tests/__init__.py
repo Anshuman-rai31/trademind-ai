@@ -1,0 +1,1 @@
+"""TradeMind automated test package."""

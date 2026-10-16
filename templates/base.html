@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TradeMind - AI-Powered Quantitative Trading Research and Simulation Platform">
+    <title>{% block title %}TradeMind | AI Quant Trading Platform{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="navbar" id="app-navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.index') }}" class="brand-logo" id="brand-logo">
+                <span class="logo-symbol">◈</span>
+                <span class="logo-text">Trade<span class="logo-accent">Mind</span></span>
+            </a>
+            
+            <div class="nav-status-group">
+                <div class="status-indicator" id="header-status-indicator">
+                    <span class="pulse-dot" id="header-pulse-dot"></span>
+                    <span class="status-label" id="header-status-text">System Active</span>
+                </div>
+                <div class="badge-phase" id="phase-badge">{{ phase }}</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content" id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer" id="app-footer">
+        <div class="footer-container">
+            <div class="footer-left">
+                <p class="footer-brand"><strong>TradeMind</strong> &bull; Quantitative Research & Simulation Platform</p>
+                <p class="footer-meta">Environment: <span class="text-accent">{{ env }}</span> &bull; Version: <span>{{ version }}</span></p>
+            </div>
+            <div class="footer-right">
+                <a href="{{ url_for('health.check_health') }}" class="footer-link" id="footer-health-link" target="_blank">Health Check API</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}TradeMind - AI-Powered Quantitative Trading Research & Simulation{% endblock %}
+
+{% block content %}
+<div class="landing-container">
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero-section">
+        <div class="hero-badge">
+            <span class="badge-dot"></span>
+            <span>Quantitative Trading Architecture</span>
+        </div>
+        <h1 class="hero-title" id="main-heading">
+            Trade<span class="gradient-text">Mind</span>
+        </h1>
+        <p class="hero-subtitle">
+            Next-generation quantitative trading research, reinforcement learning simulation, and modular strategy development framework.
+        </p>
+        <div class="hero-meta-strip">
+            <div class="meta-item">
+                <span class="meta-label">Milestone</span>
+                <span class="meta-value text-emerald">Phase 1: Project Setup</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Architecture</span>
+                <span class="meta-value">Modular Flask Backend</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Storage Engine</span>
+                <span class="meta-value">SQLite + Flat Artifacts</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">AI / RL Stack</span>
+                <span class="meta-value">PyTorch • Gymnasium • SB3</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- System Diagnostics & Health Status Widget -->
+    <section class="diagnostics-section" id="diagnostics-section">
+        <div class="card glass-card diagnostics-card" id="health-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <span class="card-icon">⚡</span>
+                    <h2 class="card-title">System Health & Runtime Status</h2>
+                </div>
+                <button class="btn btn-primary" id="btn-check-health" type="button">
+                    <span class="btn-text">Ping /health Route</span>
+                </button>
+            </div>
+            
+            <div class="card-body">
+                <div class="diagnostics-grid">
+                    <div class="diagnostic-stat">
+                        <span class="stat-name">Flask Application</span>
+                        <span class="stat-value text-emerald" id="stat-flask">Running</span>
+                    </div>
+                    <div class="diagnostic-stat">
+                        <span class="stat-name">API Status</span>
+                        <span class="stat-value text-emerald" id="stat-api-status">Checking...</span>
+                    </div>
+                    <div class="diagnostic-stat">
+                        <span class="stat-name">Response Latency</span>
+                        <span class="stat-value" id="stat-latency">-- ms</span>
+                    </div>
+                    <div class="diagnostic-stat">
+                        <span class="stat-name">Active Environment</span>
+                        <span class="stat-value text-indigo" id="stat-env">{{ env }}</span>
+                    </div>
+                </div>
+
+                <div class="health-payload-box" id="payload-container">
+                    <div class="payload-header">
+                        <span class="payload-title">Live Payload from <code>/api/health</code></span>
+                        <span class="payload-timestamp" id="payload-time">Awaiting trigger</span>
+                    </div>
+                    <pre class="code-block" id="health-json-output"><code>{ "message": "Click 'Ping /health Route' or wait for background probe..." }</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Architecture Modules -->
+    <section class="modules-section" id="modules-section">
+        <div class="section-header">
+            <h2 class="section-title">Platform Architecture Modules</h2>
+            <p class="section-desc">Structured directory layout designed for rigorous quant research, feature engineering, and RL simulation.</p>
+        </div>
+
+        <div class="modules-grid">
+            <div class="card module-card" id="module-backend">
+                <div class="module-icon">⚙️</div>
+                <h3 class="module-name">backend/app</h3>
+                <p class="module-desc">Application factory with configuration management, modular Blueprints, and RESTful routing.</p>
+                <div class="module-tags">
+                    <span class="tag">Flask</span>
+                    <span class="tag">Config</span>
+                    <span class="tag">Blueprints</span>
+                </div>
+            </div>
+
+            <div class="card module-card" id="module-data">
+                <div class="module-icon">💾</div>
+                <h3 class="module-name">data/raw & data/processed</h3>
+                <p class="module-desc">Partitioned datasets for raw tick/OHLCV market records and normalized engineered feature matrices.</p>
+                <div class="module-tags">
+                    <span class="tag">Pandas</span>
+                    <span class="tag">NumPy</span>
+                    <span class="tag">Parquet / CSV</span>
+                </div>
+            </div>
+
+            <div class="card module-card" id="module-models">
+                <div class="module-icon">🧠</div>
+                <h3 class="module-name">models/</h3>
+                <p class="module-desc">Designated repository for PyTorch neural weights, Scikit-learn estimators, and RL policy checkpoints.</p>
+                <div class="module-tags">
+                    <span class="tag">PyTorch</span>
+                    <span class="tag">SB3</span>
+                    <span class="tag">Scikit-learn</span>
+                </div>
+            </div>
+
+            <div class="card module-card" id="module-notebooks">
+                <div class="module-icon">📓</div>
+                <h3 class="module-name">notebooks/</h3>
+                <p class="module-desc">Interactive computational research notebooks for exploratory market data analysis and hypothesis testing.</p>
+                <div class="module-tags">
+                    <span class="tag">Jupyter</span>
+                    <span class="tag">Research</span>
+                    <span class="tag">EDA</span>
+                </div>
+            </div>
+
+            <div class="card module-card" id="module-instance">
+                <div class="module-icon">🗄️</div>
+                <h3 class="module-name">instance/</h3>
+                <p class="module-desc">Local runtime storage holding SQLite databases, session files, and instance-specific configurations.</p>
+                <div class="module-tags">
+                    <span class="tag">SQLite</span>
+                    <span class="tag">Runtime</span>
+                    <span class="tag">Isolated</span>
+                </div>
+            </div>
+
+            <div class="card module-card" id="module-tests">
+                <div class="module-icon">🧪</div>
+                <h3 class="module-name">tests/</h3>
+                <p class="module-desc">Automated test suites utilizing Pytest with isolated fixtures for rapid route and module validation.</p>
+                <div class="module-tags">
+                    <span class="tag">Pytest</span>
+                    <span class="tag">Fixtures</span>
+                    <span class="tag">Unit Tests</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start & Environment Section -->
+    <section class="quickstart-section" id="quickstart-section">
+        <div class="card quickstart-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <span class="card-icon">💻</span>
+                    <h2 class="card-title">Windows PowerShell Quick Start</h2>
+                </div>
+                <span class="badge badge-neutral">Phase 1 Commands</span>
+            </div>
+            <div class="card-body">
+                <p class="quickstart-note">Run these commands in Windows PowerShell from the <code>c:\TradeMind</code> workspace:</p>
+                <div class="terminal-block">
+                    <div class="terminal-header">
+                        <span class="terminal-dot red"></span>
+                        <span class="terminal-dot yellow"></span>
+                        <span class="terminal-dot green"></span>
+                        <span class="terminal-title">Windows PowerShell</span>
+                    </div>
+                    <pre class="terminal-code"><code><span class="term-comment"># 1. Create and activate virtual environment</span>
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+<span class="term-comment"># 2. Install dependencies</span>
+pip install -r requirements.txt
+
+<span class="term-comment"># 3. Run automated tests</span>
+pytest
+
+<span class="term-comment"># 4. Start TradeMind development server</span>
+python run.py</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
