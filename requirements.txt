@@ -6,8 +6,11 @@
 # PyTorch official CPU wheel repository (enables seamless resolution on Windows)
 --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Web Application Framework
+# Web Application Framework & Database Integration (Phase 9)
 Flask>=3.0.0,<4.0.0
+Flask-SQLAlchemy>=3.1.0
+SQLAlchemy>=2.0.0
+Flask-Cors>=5.0.0
 python-dotenv>=1.0.0
 
 # Scientific Computing & Data Processing
