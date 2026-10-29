@@ -167,13 +167,46 @@ def seed_default_assets(app: Flask) -> None:
             app.logger.warning("Failed to seed default assets: %s", exc)
 
 
+def seed_default_portfolio(app: Flask) -> None:
+    """Seed default simulation/paper trading portfolio if table is empty."""
+    from .models.paper_trading import PaperPortfolio
+
+    with app.app_context():
+        try:
+            if PaperPortfolio.query.filter_by(name="default").first() is not None:
+                return
+            portfolio = PaperPortfolio(
+                name="default",
+                initial_cash=100000.0,
+                cash=100000.0,
+                portfolio_value=100000.0,
+                peak_value=100000.0,
+            )
+            db.session.add(portfolio)
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.warning("Failed to seed default simulation portfolio: %s", exc)
+
+
 def init_db(app: Flask) -> None:
-    """Initialize database tables and seed baseline reference assets."""
+    """Initialize database tables and seed baseline reference assets and default portfolio."""
     # Explicitly import all models so SQLAlchemy metadata registers all tables
     from .models.agent import AgentRun  # noqa: F401
     from .models.asset import Asset  # noqa: F401
     from .models.backtest import BacktestRun, PortfolioSnapshotRecord, TradeRecord  # noqa: F401
+    from .models.market_candle import MarketCandle  # noqa: F401
+    from .models.model_registry import RegisteredModel  # noqa: F401
+    from .models.paper_trading import (  # noqa: F401
+        PaperPortfolio,
+        PaperPosition,
+        PaperSnapshotRecord,
+        PaperTrade,
+        PortfolioBucketItem,
+        RiskEventRecord,
+    )
 
     with app.app_context():
         db.create_all()
         seed_default_assets(app)
+        seed_default_portfolio(app)

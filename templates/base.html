@@ -49,6 +49,12 @@
     </footer>
 
     <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+    <script>
+    if (typeof Plotly === 'undefined') {
+        document.write('<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"><\/script>');
+    }
+    </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

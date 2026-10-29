@@ -15,9 +15,12 @@ TradeMind is an institutional-grade quantitative trading research, feature engin
 - **Phase 7: Institutional Risk Management Engine** (Completed)
 - **Phase 8: Unsupervised Market-Regime Detection** (Completed)
 - **Phase 9: Flask REST API & SQLite Database Integration** (Completed)
-- **Phase 10: Frontend Trading Dashboard & Plotly.js Visualizations** (Next Phase)
+- **Phase 9.5A: Historical Market Data Recovery & Validation** (Completed)
+- **Phase 9.5B: Persistent Storage, Database Integration & End-to-End System Integration** (Completed)
+- **Phase 10A: Interactive Market Visualization (Candlestick, Volume & Indicators)** (Completed)
+- **Phase 11A: Real-Time Market Data Provider Integration (Zerodha Kite & Mock)** (Completed)
 
-> **Simulation Boundary**: TradeMind is designed exclusively for offline historical research, feature engineering, and RL simulation. It does **not** connect to live brokerage APIs or execute real-money orders.
+> **Simulation Boundary**: TradeMind is designed exclusively for offline historical research, feature engineering, and RL simulation. It does **not** connect to live brokerage APIs or execute real-money orders. No profitability claims are made.
 
 ---
 
@@ -31,7 +34,7 @@ TradeMind/
 ├── process_dataset.py              # CLI entry point for data ingestion, validation & splitting
 ├── README.md                       # Comprehensive platform documentation
 ├── docs/
-│   └── api_guide.md                # Comprehensive REST API & SQLite Persistence Guide (Phase 9)
+│   └── api_guide.md                # Comprehensive REST API & SQLite Persistence Guide
 ├── config/
 │   └── market_data_nse.json        # Central market data configuration for NSE equities
 ├── backend/
@@ -45,18 +48,28 @@ TradeMind/
 │       ├── rl/                     # Phase 5 & 6 Gymnasium Environment & PPO RL Engine
 │       ├── risk/                   # Phase 7 Risk Management Gateway
 │       ├── regime/                 # Phase 8 Market-Regime Clustering Engine
-│       ├── models/                 # Phase 9 SQLAlchemy Persistence Models
+│       ├── realtime/               # Phase 11A Real-Time Market Data Integration
+│       │   ├── __init__.py         # Package exports
+│       │   ├── models.py           # Quote, connection states & config models
+│       │   ├── validator.py        # Real-time tick validation & staleness detection
+│       │   ├── base_provider.py    # Abstract base provider interface
+│       │   ├── kite_provider.py    # Zerodha Kite Connect WebSocket provider
+│       │   ├── mock_provider.py    # Mock/simulation provider for offline testing
+│       │   └── manager.py          # Portfolio-aware subscription coordinator
+│       ├── models/                 # SQLAlchemy Persistence Models
 │       │   ├── __init__.py         # Model package exports
 │       │   ├── asset.py            # Asset model
 │       │   ├── backtest.py         # BacktestRun, TradeRecord, PortfolioSnapshotRecord
-│       │   └── agent.py            # AgentRun model
+│       │   ├── agent.py            # AgentRun model
+│       │   └── paper_trading.py    # PaperPortfolio, PortfolioBucketItem, PaperPosition, PaperTrade, PaperSnapshotRecord, RiskEventRecord
 │       ├── services/               # Phase 9 Business Logic & Integration Services
 │       │   ├── __init__.py         # Service package exports
 │       │   ├── market_data_service.py # Validated OHLCV data query service
 │       │   ├── backtest_service.py # Backtest runner & bounded ThreadPool background worker
 │       │   ├── risk_service.py     # Pre-trade risk constraint evaluation service
 │       │   ├── regime_service.py   # Regime detector artifact inspection & inference
-│       │   └── agent_service.py    # PPO agent artifact inspector & inference decision service
+│       │   ├── agent_service.py    # PPO agent artifact inspector & inference decision service
+│       │   └── trading_pipeline_service.py # Multi-stock portfolios, stock bucket, rebalancing & simulation pipeline
 │       └── routes/                 # Blueprint Route Handlers
 │           ├── __init__.py         # Blueprint package exports
 │           ├── main.py             # Landing page route (/)
@@ -304,6 +317,102 @@ TradeMind exposes an institutional-grade REST API prefixed with `/api/v1/`, back
   - `GET /api/v1/regimes/<symbol>/latest`: Retrospective regime classification for latest bar.
 
 For detailed request/response schemas, error handling codes, and parameter bounds, see [`docs/api_guide.md`](file:///c:/TradeMind/docs/api_guide.md).
+
+---
+
+## 🏛️ Phase 9.5B: Persistent Storage, Database Integration & End-to-End System Integration
+
+Phase 9.5B completes the persistent, audited, recoverable, and end-to-end integration across all TradeMind components.
+
+### 1. Unified End-to-End Execution Flow
+
+$$\text{Historical Data} \longrightarrow \text{Feature Engineering} \longrightarrow \text{Market Regime Detection} \longrightarrow \text{PPO Policy Inference} \longrightarrow \text{Risk Management Gate} \longrightarrow \text{Portfolio Simulator Execution} \longrightarrow \text{SQLite Persistence} \longrightarrow \text{REST API} \longrightarrow \text{Frontend Dashboard}$$
+
+- **Zero Future Leakage**: Observations are constructed using only data available up to decision timestamp $t$.
+- **Protective Risk Gateway**: Every trade is inspected by `RiskManager` before ledger execution. Interventions are recorded in `RiskEventRecord`.
+- **Atomic Database Transactions**: Paper trades, updated position ledgers, and audit events are committed together; failures trigger complete transaction rollback.
+
+### 2. Multi-Tier Persistence Architecture
+
+| Data Domain | Storage Mechanism | Schema / Structure | Recovery & Integrity Protection |
+| :--- | :--- | :--- | :--- |
+| **Relational Metadata & Simulation State** | SQLite (`instance/trademind.db`) | `Asset`, `BacktestRun`, `TradeRecord`, `RegisteredModel`, `PaperPortfolio`, `PaperPosition`, `PaperTrade`, `RiskEventRecord` | Foreign keys, cascading constraints, WAL mode, online atomic backup API (`sqlite3.backup`) |
+| **Market Data (Raw & Processed)** | Local filesystem (`data/raw/`, `data/processed/`, `data/metadata/`) | Normalized OHLCV CSVs (`{symbol}_{freq}_processed.csv`) + JSON provenance reports | SHA-256 checksums, atomic temporary file replacement, failure rollback on error |
+| **Model Artifacts & Checkpoints** | Configurable directory (`models/checkpoints/`) | SB3 PPO `.zip` policies + `training_metadata.json` | Model Registry table tracking candidate/approved/active states, SHA-256 validation, safe rollback |
+
+### 3. Phase 9.5B REST API Additions
+
+#### A. Model Registry Management (`/api/v1/models`)
+- `GET /api/v1/models`: List registered models with optional `?symbol=` and `?status=` filters.
+- `GET /api/v1/models/<id>`: Retrieve model metadata, observation space dimension, and validation metrics.
+- `POST /api/v1/models/sync`: Auto-discover unindexed checkpoints in `models/` and register them.
+- `POST /api/v1/models/<id>/approve`: Promote candidate model to approved status.
+- `POST /api/v1/models/<id>/activate`: Set model as active inference policy for its symbol (deactivating prior active policy).
+- `POST /api/v1/models/<symbol>/rollback`: Roll back active model to the previously approved checkpoint.
+
+#### B. Paper Trading Simulation, Stock Bucket & Multi-Stock Portfolios (`/api/v1/trading`)
+- `GET /api/v1/trading/portfolios`: List all configured portfolios with performance metrics and target allocations.
+- `POST /api/v1/trading/portfolios`: Create an isolated paper portfolio configured from the Stock Bucket/Cart.
+- `GET /api/v1/trading/portfolios/<name_or_id>`: Retrieve specific portfolio balances, bucket items, and active positions.
+- `PUT /api/v1/trading/portfolios/<name_or_id>/bucket`: Update stock bucket selection and target allocation weights.
+- `POST /api/v1/trading/portfolios/<name_or_id>/rebalance`: Execute simulated multi-asset rebalancing across bucket stocks.
+- `GET /api/v1/trading/portfolios/<name_or_id>/snapshots`: Valuation snapshots for historical equity curve rendering.
+- `DELETE /api/v1/trading/portfolios/<name_or_id>`: Delete a custom portfolio (default portfolio protected).
+- `POST /api/v1/trading/step`: Execute a deterministic simulation step (Data → Features → Regime → PPO → Risk Gate → Persistence).
+- `GET /api/v1/trading/portfolio`: Get current paper portfolio state (cash, positions, total value, peak value, drawdown).
+- `GET /api/v1/trading/trades`: Paginated list of simulated executed trades with fee and slippage audit.
+- `GET /api/v1/trading/risk-events`: Paginated list of institutional risk interventions (blocked or constrained orders).
+
+#### C. Incremental Market Data Updates (`/api/v1/assets`)
+- `GET /api/v1/assets/<symbol>/metadata`: Return on-disk row count, date ranges, file path, and SHA-256 checksum.
+- `POST /api/v1/assets/refresh`: Trigger atomic incremental update for a single symbol or all configured symbols.
+
+### 4. Online SQLite Backup & Disaster Recovery Utility
+
+A dedicated online backup and restore utility is provided in `scripts/backup_restore.py`:
+
+```powershell
+# 1. Create a point-in-time consistent backup (DB + Market Data + Models)
+.\.venv\Scripts\python.exe scripts/backup_restore.py backup --output-dir backups
+
+# 2. Verify archive integrity and view contents
+.\.venv\Scripts\python.exe scripts/backup_restore.py list
+
+# 3. Restore from a backup archive with automatic pre-restore safety snapshot
+.\.venv\Scripts\python.exe scripts/backup_restore.py restore --archive backups/trademind_backup_YYYYMMDD_HHMMSS.tar.gz
+```
+
+### 5. Deployment Persistence Configuration
+
+For production deployment (e.g. Docker, Kubernetes, Cloud Run), mount persistent volumes (PV/PVC) to preserve the following stateful directories:
+
+| Mount Path | Volume Type | Minimum Recommended Size | Required Survival Across Restarts |
+| :--- | :--- | :--- | :--- |
+| `/app/instance` | Persistent Volume | 5 GB | **Critical** (Application database, portfolio states, model registry) |
+| `/app/data/processed` | Persistent Volume | 10 GB | **Critical** (Validated historical OHLCV datasets) |
+| `/app/data/metadata` | Persistent Volume | 1 GB | **Critical** (Data provenance and validation audit trails) |
+| `/app/models` | Persistent Volume | 10 GB | **Critical** (Trained PyTorch weights and SB3 PPO policy artifacts) |
+| `/app/data/raw` | Object Storage / PV | 20 GB | **Recommended** (Immutable original provider downloads) |
+
+**Environment Variables**:
+- `DATABASE_URL`: Defaults to `sqlite:///instance/trademind.db`. Supports PostgreSQL (`postgresql://user:pass@host:5432/trademind`) without breaking local workflows.
+- `DATA_RAW_DIR`, `DATA_PROCESSED_DIR`, `MODELS_DIR`: Override filesystem storage paths.
+- `MAX_BACKTEST_WORKERS`: Bounded thread concurrency limit (default: 2).
+- `CORS_ORIGINS`: Allowed client origins for REST API access.
+
+---
+
+## ⚡ Phase 11: Real-Time Market Data & WebSocket Subscription Management
+
+TradeMind AI incorporates a modular real-time streaming market data subsystem (Phases 11A & 11B) for Indian NSE equities using the Zerodha Kite Connect WebSocket protocol (`KiteTicker`) with fallback to an offline deterministic mock provider:
+
+### Key Capabilities:
+- **Connection Lifecycle**: Full state tracking (`DISCONNECTED`, `CONNECTING`, `CONNECTED`, `RECONNECTING`, `AUTH_FAILED`, `ERROR`, `STALE`) with protection against concurrent duplicate connections.
+- **Protocol Decoding**: Official Kite Connect binary packet decoder (`KiteProtocolParser`) supporting 8-byte LTP, 44-byte Quote, and 184-byte Full modes with 5-depth bid/ask books and exchange timestamps.
+- **Dynamic Subscription Management**: Instrument mapping, incremental subscribe/unsubscribe, capacity enforcement, broker acknowledgement tracking, and portfolio-aware syncing (`to_add`, `to_remove` deltas without reconnecting).
+- **Automatic Reconnection & Reconciliation**: Bounded exponential backoff retry loop with automatic resubscription of all desired instruments upon reconnect.
+- **Granular Activity Diagnostics**: Distinguishes between inactive instruments (liquid market absence during open connection) and broken socket connections (`is_stale`).
+- **Zero Credential Exposure**: In-memory credential isolation; credentials and tokens are strictly filtered out of API responses, frontend payloads, and log entries.
 
 ---
 

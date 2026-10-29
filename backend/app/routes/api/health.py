@@ -95,12 +95,29 @@ def system_status():
         "saved_models_count": len(saved_regime_models),
     }
 
+    # 6. Model Registry & Paper Trading Capabilities
+    from ...models.model_registry import RegisteredModel
+    from ...models.paper_trading import PaperPortfolio
+
+    model_registry_info = {
+        "installed": True,
+        "registered_models_count": RegisteredModel.query.count(),
+        "active_models_count": RegisteredModel.query.filter_by(is_active=True).count(),
+    }
+    simulation_trading_info = {
+        "installed": True,
+        "mode": "Simulation (Paper Trading)",
+        "active_portfolios_count": PaperPortfolio.query.count(),
+    }
+
     status_data = {
         "market_data": market_data_info,
         "baseline_strategies": baseline_strategies,
         "ppo_agent": agent_status,
         "risk_management": risk_status,
         "market_regime": regime_status,
+        "model_registry": model_registry_info,
+        "simulation_trading": simulation_trading_info,
     }
 
     return api_response(data=status_data, status_code=200)

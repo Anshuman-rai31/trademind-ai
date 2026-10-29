@@ -309,6 +309,94 @@ def test_failed_refresh_preserves_existing_data(temp_env):
     assert dest_path.read_bytes() == original_bytes
 
 
+def test_provider_partial_download_insufficient_records(temp_env):
+    """Test that partial downloads with insufficient bars are rejected and existing data is preserved."""
+    pipeline = MarketDataPipeline(
+        raw_dir=temp_env["raw"],
+        processed_dir=temp_env["processed"],
+        metadata_dir=temp_env["metadata"],
+    )
+    mock_ticker = MagicMock()
+    # Mocking validation error when download has insufficient or empty records
+    with patch("yfinance.Ticker", return_value=mock_ticker):
+        with patch("backend.app.data.pipeline.validate_ohlcv_dataframe", side_effect=DataValidationError("Insufficient records in partition")):
+            mock_ticker.history.return_value = pd.DataFrame({"Open": [100.0], "High": [105.0], "Low": [99.0], "Close": [104.0], "Volume": [1000]}, index=pd.date_range("2024-01-01", periods=1, freq="D", tz="UTC"))
+            with pytest.raises(DataValidationError) as exc:
+                pipeline.download_and_process_symbol("TCS.NS", refresh=True)
+            assert "Insufficient records" in str(exc.value)
+
+
+def test_provider_invalid_ohlcv_values_rejected(temp_env):
+    """Test that invalid OHLCV bars (e.g. high < low) in provider response are rejected while valid rows pass."""
+    pipeline = MarketDataPipeline(
+        raw_dir=temp_env["raw"],
+        processed_dir=temp_env["processed"],
+        metadata_dir=temp_env["metadata"],
+    )
+    dates = pd.date_range("2024-01-01", periods=3, freq="D", tz="UTC")
+    # Row 2 has high < low (90 < 105)
+    bad_df = pd.DataFrame({
+        "Open": [100.0, 100.0, 102.0],
+        "High": [105.0, 90.0, 107.0],
+        "Low": [99.0, 105.0, 101.0],
+        "Close": [104.0, 95.0, 106.0],
+        "Volume": [1000, 1000, 1000],
+    }, index=dates)
+
+    mock_ticker = MagicMock()
+    mock_ticker.history.return_value = bad_df
+
+    with patch("yfinance.Ticker", return_value=mock_ticker):
+        dest_path, report, prov = pipeline.download_and_process_symbol("INFY.NS", refresh=True)
+
+    assert report.rejected_row_count == 1
+    assert report.valid_row_count == 2
+    assert prov.validation_status == "WARNINGS"
+
+
+def test_failed_write_permission_error_preserves_original_data(temp_env):
+    """Test that if saving to processed directory encounters a permission error, DataIngestionError is raised and original data is preserved."""
+    from backend.app.data.exceptions import DataIngestionError
+
+    pipeline = MarketDataPipeline(
+        raw_dir=temp_env["raw"],
+        processed_dir=temp_env["processed"],
+        metadata_dir=temp_env["metadata"],
+    )
+    dates = pd.date_range("2024-01-01", periods=3, freq="D", tz="UTC")
+    valid_df = pd.DataFrame({
+        "Open": [100.0, 101.0, 102.0],
+        "High": [105.0, 106.0, 107.0],
+        "Low": [99.0, 100.0, 101.0],
+        "Close": [104.0, 105.0, 106.0],
+        "Volume": [1000, 1000, 1000],
+    }, index=dates)
+
+    mock_ticker = MagicMock()
+    mock_ticker.history.return_value = valid_df
+
+    with patch("yfinance.Ticker", return_value=mock_ticker):
+        dest_path, _, _ = pipeline.download_and_process_symbol("SBIN.NS", refresh=True)
+
+    original_content = dest_path.read_text(encoding="utf-8")
+
+    # Simulate locked file raising PermissionError on pandas to_csv when writing processed dataset
+    orig_to_csv = pd.DataFrame.to_csv
+    def mock_to_csv(self, path, *args, **kwargs):
+        if "processed" in str(path):
+            raise PermissionError("File locked by Excel")
+        return orig_to_csv(self, path, *args, **kwargs)
+
+    with patch("yfinance.Ticker", return_value=mock_ticker):
+        with patch.object(pd.DataFrame, "to_csv", mock_to_csv):
+            with pytest.raises(DataIngestionError) as exc:
+                pipeline.download_and_process_symbol("SBIN.NS", refresh=True)
+            assert "locked by another process" in str(exc.value)
+
+    # Verify original file content was preserved
+    assert dest_path.read_text(encoding="utf-8") == original_content
+
+
 # ==============================================================================
 # Tests: Chronological Dataset Splitting
 # ==============================================================================

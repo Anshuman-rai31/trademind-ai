@@ -40,6 +40,14 @@ class Config:
     DATA_PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
     MODELS_DIR = PROJECT_ROOT / "models"
     NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
+    
+    # Real-Time Market Data Provider Configuration (Phase 11A)
+    REALTIME_PROVIDER = os.environ.get("REALTIME_PROVIDER", "kite")
+    KITE_API_KEY = os.environ.get("KITE_API_KEY")
+    KITE_ACCESS_TOKEN = os.environ.get("KITE_ACCESS_TOKEN")
+    REALTIME_MAX_SUBSCRIPTIONS = int(os.environ.get("REALTIME_MAX_SUBSCRIPTIONS", "50"))
+    REALTIME_STALE_TIMEOUT_SECONDS = float(os.environ.get("REALTIME_STALE_TIMEOUT_SECONDS", "15.0"))
+    REALTIME_RECONNECT_MAX_RETRIES = int(os.environ.get("REALTIME_RECONNECT_MAX_RETRIES", "5"))
 
 
 class DevelopmentConfig(Config):

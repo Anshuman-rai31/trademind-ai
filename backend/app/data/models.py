@@ -31,11 +31,20 @@ class RejectedRow:
     raw_values: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        safe_raw = {}
+        for k, v in self.raw_values.items():
+            if hasattr(v, "isoformat"):
+                safe_raw[str(k)] = v.isoformat()
+            elif isinstance(v, (int, float, bool, str)) or v is None:
+                safe_raw[str(k)] = v
+            else:
+                safe_raw[str(k)] = str(v)
+
         return {
             "index": self.index,
-            "timestamp": self.timestamp,
+            "timestamp": str(self.timestamp) if self.timestamp is not None else None,
             "reasons": self.reasons,
-            "raw_values": self.raw_values,
+            "raw_values": safe_raw,
         }
 
 

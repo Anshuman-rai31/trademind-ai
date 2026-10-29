@@ -76,7 +76,7 @@ def test_api_v1_health_endpoint(client):
 
 def test_api_v1_health_degraded_when_db_down(client):
     """Test GET /api/v1/health returns 503 when database execution fails."""
-    with patch("backend.app.db.db.session.execute", side_effect=Exception("Database connection error")):
+    with patch("backend.app.routes.api.health.db.session.execute", side_effect=Exception("Database connection error")):
         response = client.get("/api/v1/health")
         assert response.status_code == 503
         body = response.get_json()
@@ -193,9 +193,10 @@ def test_api_v1_asset_history_validation_errors(client):
     assert r3.get_json()["error"]["code"] == "INVALID_PARAMETER"
 
     # 4. Symbol without processed historical data
-    r4 = client.get("/api/v1/assets/SBIN.NS/history")
-    assert r4.status_code == 404
-    assert r4.get_json()["error"]["code"] == "DATA_UNAVAILABLE"
+    with patch("backend.app.services.market_data_service.MarketDataService._find_processed_file", return_value=None):
+        r4 = client.get("/api/v1/assets/SBIN.NS/history")
+        assert r4.status_code == 404
+        assert r4.get_json()["error"]["code"] == "DATA_UNAVAILABLE"
 
 
 # ==============================================================================
@@ -403,12 +404,13 @@ def test_api_v1_agent_decision_missing_model_returns_503(client):
         "symbol": "RELIANCE.NS",
         "state": [1.0, 0.5, -0.2, 0.8, 1.2],
     }
-    response = client.post("/api/v1/agent/decisions", json=payload)
-    # If no model is saved in models/, endpoint MUST return 503 rather than inventing decisions
-    assert response.status_code == 503
-    body = response.get_json()
-    assert body["success"] is False
-    assert body["error"]["code"] == "MODEL_UNAVAILABLE"
+    with patch("backend.app.services.agent_service.AgentService.find_model_artifact", return_value=None):
+        response = client.post("/api/v1/agent/decisions", json=payload)
+        # If no model is saved in models/, endpoint MUST return 503 rather than inventing decisions
+        assert response.status_code == 503
+        body = response.get_json()
+        assert body["success"] is False
+        assert body["error"]["code"] == "MODEL_UNAVAILABLE"
 
 
 def test_api_v1_agent_decision_with_mock_model(client):

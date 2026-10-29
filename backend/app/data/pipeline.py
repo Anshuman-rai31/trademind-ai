@@ -144,7 +144,7 @@ class MarketDataPipeline:
             report_filename = dest_path.with_suffix(".json")
             try:
                 with open(report_filename, "w", encoding="utf-8") as f:
-                    json.dump(report.to_dict(), f, indent=2)
+                    json.dump(report.to_dict(), f, indent=2, default=str)
             except PermissionError as exc:
                 raise DataIngestionError(
                     f"Permission denied writing report to '{report_filename}'. "
@@ -283,7 +283,7 @@ class MarketDataPipeline:
         if save_report:
             report_file = canonical_dest.with_suffix(".json")
             with open(report_file, "w", encoding="utf-8") as f:
-                json.dump(report.to_dict(), f, indent=2)
+                json.dump(report.to_dict(), f, indent=2, default=str)
 
         # 7. Create and persist Provenance Metadata
         provenance = ProvenanceMetadata(

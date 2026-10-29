@@ -39,6 +39,7 @@ venv.bak/
 # SQLite Databases & Local Instance Storage
 instance/*
 !instance/.gitkeep
+backups/
 *.db
 *.sqlite3
 *.sqlite

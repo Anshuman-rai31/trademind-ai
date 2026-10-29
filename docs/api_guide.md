@@ -91,7 +91,7 @@ All API endpoints are prefixed with `/api/v1/`.
 | `GET` | `/api/v1/system/status` | Modular platform capability breakdown | None |
 | `GET` | `/api/v1/assets` | List supported trading assets | None |
 | `GET` | `/api/v1/assets/<symbol>` | Get details & data summary for single asset | `symbol` (in path) |
-| `GET` | `/api/v1/assets/<symbol>/history` | Query validated historical OHLCV bars | `start_date`, `end_date`, `limit` (max 5000) |
+| `GET` | `/api/v1/assets/<symbol>/history` | Query validated historical OHLCV bars & optional technical indicators | `start_date`, `end_date`, `limit` (max 5000), `indicators` (boolean) |
 | `GET` | `/api/v1/dashboard/summary` | Aggregated dashboard overview metrics | None |
 | `POST` | `/api/v1/backtests` | Queue backtest execution (Buy&Hold, MACrossover) | `name`, `symbol`, `strategy_type`, `initial_capital`, `parameters`, `sync` |
 | `GET` | `/api/v1/backtests` | List backtests with pagination and filtering | `page`, `limit`, `symbol`, `status` |
@@ -145,27 +145,34 @@ Returns status of market data, baseline strategies, PPO agent, risk management, 
 #### `GET /api/v1/assets`
 Returns all canonical supported equities.
 
-#### `GET /api/v1/assets/RELIANCE.NS/history?limit=3`
-Fetches validated OHLCV records from `data/processed/`.
+#### `GET /api/v1/assets/RELIANCE.NS/history?limit=3&indicators=true`
+Fetches validated OHLCV records from `data/processed/` with technical indicator overlays (`sma_5`, `sma_20`, `rsi_14`, `macd_line`, `macd_signal`, `macd_histogram`).
 
 ```json
 {
   "success": true,
   "data": [
     {
-      "timestamp": "2023-12-31T18:30:00Z",
+      "timestamp": "2024-01-02T18:30:00Z",
       "open": 1274.9,
       "high": 1287.89,
       "low": 1271.24,
       "close": 1279.69,
       "volume": 4030540,
-      "symbol": "RELIANCE.NS"
+      "symbol": "RELIANCE.NS",
+      "sma_5": 1270.42,
+      "sma_20": 1255.81,
+      "rsi_14": 62.45,
+      "macd_line": 8.35,
+      "macd_signal": 6.12,
+      "macd_histogram": 2.23
     }
   ],
   "meta": {
     "returned_bars": 1,
-    "total_matched_bars": 10,
-    "limit": 3
+    "total_matched_bars": 2469,
+    "limit": 3,
+    "include_indicators": true
   }
 }
 ```
@@ -323,6 +330,283 @@ Returns the historical regime classification for the latest observation bar. Doe
 }
 ```
 
+### G. User-Configured Multi-Stock Portfolios & Stock Bucket (Phase 9.5B+)
+
+#### Portfolio Architecture & Security Note
+> **Single-Tenant / Local Research Environment:** TradeMind currently runs in a single-tenant local quantitative research environment without user authentication accounts. A default `user_id="default_user"` is stored in the database models for future schema compatibility. Strict data isolation across portfolios is enforced at the `portfolio_id` and unique `name` database foreign-key boundary.
+
+#### `GET /api/v1/trading/portfolios`
+Lists all user-configured portfolios with summary balances, allocations, and performance metrics.
+
+**Response (`HTTP 200 OK`):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "default",
+      "user_id": "default_user",
+      "initial_cash": 100000.0,
+      "cash": 100000.0,
+      "portfolio_value": 100000.0,
+      "peak_value": 100000.0,
+      "total_realized_pnl": 0.0,
+      "total_unrealized_pnl": 0.0,
+      "total_pnl": 0.0,
+      "return_pct": 0.0,
+      "drawdown_pct": 0.0,
+      "allocation_method": "EQUAL_WEIGHT",
+      "strategy_type": "BUY_AND_HOLD",
+      "bucket": [
+        {"id": 1, "symbol": "RELIANCE.NS", "target_weight": 0.2, "target_pct": 20.0},
+        {"id": 2, "symbol": "TCS.NS", "target_weight": 0.2, "target_pct": 20.0},
+        {"id": 3, "symbol": "INFY.NS", "target_weight": 0.2, "target_pct": 20.0},
+        {"id": 4, "symbol": "ICICIBANK.NS", "target_weight": 0.2, "target_pct": 20.0},
+        {"id": 5, "symbol": "SBIN.NS", "target_weight": 0.2, "target_pct": 20.0}
+      ],
+      "positions": []
+    }
+  ]
+}
+```
+
+#### `POST /api/v1/trading/portfolios`
+Creates an isolated paper-trading portfolio configured with selected stock bucket assets and target weights.
+
+**Request Body:**
+```json
+{
+  "name": "tech_balanced",
+  "initial_cash": 200000.0,
+  "allocation_method": "CUSTOM",
+  "strategy_type": "BUY_AND_HOLD",
+  "risk_config": { "max_drawdown_limit": 0.15 },
+  "bucket": [
+    {"symbol": "RELIANCE.NS", "target_weight": 0.40},
+    {"symbol": "TCS.NS", "target_weight": 0.35},
+    {"symbol": "INFY.NS", "target_weight": 0.25}
+  ]
+}
+```
+
+**Response (`HTTP 201 Created`):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "name": "tech_balanced",
+    "initial_cash": 200000.0,
+    "cash": 200000.0,
+    "portfolio_value": 200000.0,
+    "allocation_method": "CUSTOM",
+    "bucket": [
+      {"symbol": "RELIANCE.NS", "target_weight": 0.4},
+      {"symbol": "TCS.NS", "target_weight": 0.35},
+      {"symbol": "INFY.NS", "target_weight": 0.25}
+    ],
+    "positions": []
+  }
+}
+```
+
+*Validation Rules:*
+- Name must be unique and non-empty.
+- Bucket must contain at least 1 supported NSE asset (`RELIANCE.NS`, `TCS.NS`, `INFY.NS`, `ICICIBANK.NS`, `SBIN.NS`).
+- No duplicate symbols in the bucket.
+- Adding a stock to the bucket does *not* create position holdings until execution/rebalancing.
+- In `CUSTOM` mode, target weights must be strictly positive and sum to 100% (within 1.5% tolerance).
+
+#### `GET /api/v1/trading/portfolios/<name_or_id>`
+Retrieves the complete state of a portfolio, including cash, holdings value, target bucket items, open positions, and return metrics.
+
+#### `PUT /api/v1/trading/portfolios/<name_or_id>/bucket`
+Updates the stock selection bucket and target allocation weights of an existing portfolio.
+
+#### `POST /api/v1/trading/portfolios/<name_or_id>/rebalance`
+Executes simulated rebalancing across configured bucket stocks:
+1. Computes total mark-to-market portfolio value.
+2. Calculates target shares per stock: `Target_Shares = floor(Portfolio_Value * target_weight / price)`.
+3. Sells excess shares first to release cash, applying 0.05% slippage and 0.03% transaction fees.
+4. Buys required shares up to available cash.
+5. Updates positions, cash balance, and logs trades and equity snapshots.
+
+#### `GET /api/v1/trading/portfolios/<name_or_id>/snapshots`
+Returns the sequential valuation snapshots for rendering the portfolio equity curve.
+
+#### `DELETE /api/v1/trading/portfolios/<name_or_id>`
+Deletes a custom portfolio. Deletion of the `default` portfolio is prevented.
+
+---
+
+### H. Real-Time Market Data Provider APIs (Phase 11A)
+
+Provides modular integration with streaming market-data providers (Zerodha Kite Connect WebSocket protocol / Mock provider for offline testing and verification).
+
+#### Provider Configuration & Security
+> **Security Guarantee:** Real-time provider credentials (`KITE_API_KEY`, `KITE_ACCESS_TOKEN`, `KITE_API_SECRET`) are read strictly from environment variables. They are never hardcoded, never stored in the database, and never exposed in API responses or frontend payloads.
+
+#### `GET /api/v1/realtime/status`
+Returns connection lifecycle state, telemetry, staleness indicator, and sanitized configuration.
+
+**Response (`HTTP 200 OK`):**
+```json
+{
+  "success": true,
+  "data": {
+    "status": "CONNECTED",
+    "provider": "kite",
+    "is_stale": false,
+    "telemetry": {
+      "status": "CONNECTED",
+      "provider_name": "kite",
+      "connected_at": "2026-10-29T13:40:00Z",
+      "last_message_at": "2026-10-29T13:40:05Z",
+      "last_heartbeat_at": "2026-10-29T13:40:05Z",
+      "messages_received": 1420,
+      "messages_rejected": 0,
+      "subscribed_symbols_count": 5,
+      "reconnect_attempts": 0,
+      "last_error": null,
+      "is_stale": false
+    },
+    "config": {
+      "provider_name": "kite",
+      "has_credentials": true,
+      "has_api_key": true,
+      "has_access_token": true,
+      "max_subscriptions": 50,
+      "stale_timeout_seconds": 15.0,
+      "reconnect_max_retries": 5
+    }
+  }
+}
+```
+
+#### `GET /api/v1/realtime/health`
+Returns granular health diagnostics distinguishing socket connection health from individual instrument inactivity (e.g., illiquid stocks or closed market hours vs broken WebSocket):
+```json
+{
+  "success": true,
+  "data": {
+    "status": "CONNECTED",
+    "provider": "kite",
+    "connected": true,
+    "is_stale": false,
+    "last_heartbeat_at": "2026-10-29T14:15:00.123456+00:00",
+    "last_message_at": "2026-10-29T14:15:00.123456+00:00",
+    "messages_received": 1420,
+    "messages_rejected": 0,
+    "reconnect_attempts": 0,
+    "last_error": null,
+    "subscriptions": {
+      "total_subscribed": 5,
+      "active_instruments": 4,
+      "inactive_market_instruments": 1,
+      "capacity": 50
+    }
+  }
+}
+```
+
+#### `POST /api/v1/realtime/connect`
+Initiates connection to the market data feed with exponential backoff and auth verification.
+
+#### `POST /api/v1/realtime/disconnect`
+Gracefully closes the streaming connection and releases background listeners.
+
+#### `POST /api/v1/realtime/reconnect`
+Triggers an immediate clean disconnect, bounded backoff, and automatic subscription reconciliation:
+```json
+{
+  "success": true,
+  "data": {
+    "reconnected": true,
+    "status": "CONNECTED",
+    "subscriptions": ["ICICIBANK.NS", "INFY.NS", "RELIANCE.NS", "SBIN.NS", "TCS.NS"]
+  }
+}
+```
+
+#### `GET /api/v1/realtime/subscriptions`
+Returns the active subscription list and configured subscription capacity. Pass `?details=true` for full registry telemetry:
+```json
+{
+  "success": true,
+  "data": {
+    "total_registered": 5,
+    "subscribed_count": 2,
+    "active_instruments": 2,
+    "inactive_market_instruments": 0,
+    "max_subscriptions": 50,
+    "instruments": {
+      "RELIANCE.NS": {
+        "symbol": "RELIANCE.NS",
+        "instrument_token": 738561,
+        "state": "SUBSCRIBED",
+        "activity_status": "ACTIVE",
+        "last_price": 2850.5,
+        "last_seen_at": "2026-10-29T14:15:00.000000+00:00",
+        "ticks_count": 45,
+        "error_message": null,
+        "subscribed_at": "2026-10-29T14:10:00.000000+00:00"
+      }
+    }
+  }
+}
+```
+
+#### `POST /api/v1/realtime/subscribe`
+Subscribes to updates for specified instruments:
+```json
+{
+  "symbols": ["RELIANCE.NS", "TCS.NS"]
+}
+```
+
+#### `POST /api/v1/realtime/unsubscribe`
+Unsubscribes from specified instruments:
+```json
+{
+  "symbols": ["TCS.NS"]
+}
+```
+
+#### `POST /api/v1/realtime/sync-portfolio`
+Synchronizes active subscriptions with the user's active portfolio stock bucket:
+```json
+{
+  "portfolio": "tech_balanced"
+}
+```
+*Computes delta (`to_add` and `to_remove`) without disconnecting or duplicating connections.*
+
+#### `GET /api/v1/realtime/quotes`
+Retrieves latest validated quotes across all subscribed instruments.
+
+#### `GET /api/v1/realtime/quotes/<symbol>`
+Retrieves the latest validated quote for a specific instrument.
+
+#### `GET /api/v1/realtime/freshness/<symbol>`
+Returns instrument freshness status (`FRESH`, `AGING`, `STALE`, `OFFLINE`), event timestamp, local processing timestamp, and latency in milliseconds.
+
+#### `GET /api/v1/realtime/candles/<symbol>`
+Retrieves recent completed and in-progress OHLCV candles:
+- Parameters: `interval` (`1m`, `5m`, `1d`, default: `5m`), `limit` (default: 50, max: 500), `include_in_progress` (`true`/`false`, default: `true`).
+
+#### `GET /api/v1/realtime/candles/<symbol>/latest`
+Retrieves the latest completed/closed OHLCV candle for the specified interval.
+
+#### `GET /api/v1/realtime/candles/<symbol>/in-progress`
+Retrieves the currently accumulating in-progress candle for the specified interval.
+
+#### `GET /api/v1/realtime/features/<symbol>`
+Evaluates the PPO feature engineering pipeline. Returns the 12-dimensional observation vector if compatible, or reports the timeframe mismatch if an intraday interval is requested against the daily PPO model checkpoint.
+
+#### `GET /api/v1/realtime/dashboard`
+Returns the aggregated real-time dashboard state (connection telemetry, active quotes, per-stock freshness, recent candles, and PPO feature readiness) for responsive frontend polling without page reloads.
+
 ---
 
 ## 5. Configuration & Security
@@ -333,3 +617,4 @@ Returns the historical regime classification for the latest observation bar. Doe
 - **Worker Concurrency**: Bounded local threads for backtests are controlled via `MAX_BACKTEST_WORKERS=2` (default 2).
 - **SQLite Database Path**: Located at `instance/trademind.db`. Override via `DATABASE_URL`.
 - **Model Storage**: Model artifacts are stored in `models/`. Models are never loaded into SQLite directly.
+
