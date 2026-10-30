@@ -28,4 +28,4 @@ if __name__ == "__main__":
     print(f" Health Check: http://{host}:{port}/health")
     print("=" * 60)
     
-    app.run(host=host, port=port, debug=debug)
+    app.run(host=host, port=port, debug=debug, threaded=True)

@@ -98,13 +98,16 @@ class LiveFeaturePipeline:
                     "features": None,
                 }
 
+        clean_inv = candle_interval.strip().lower()
+        is_timeframe_mismatch = clean_inv != self.trained_model_timeframe
+
         # 2. Check sufficient history for warmup
         if len(candles_history) < self.min_warmup_bars:
             return {
                 "ready": False,
                 "observation": None,
                 "observation_dim": EXPECTED_OBS_DIM,
-                "timeframe_mismatch": False,
+                "timeframe_mismatch": is_timeframe_mismatch,
                 "reason": (
                     f"Insufficient history: received {len(candles_history)} completed bars, "
                     f"but at least {self.min_warmup_bars} bars are required for rolling indicators (MACD, BB, ATR)."

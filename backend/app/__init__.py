@@ -13,7 +13,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from .config import INSTANCE_DIR, PROJECT_ROOT, config_by_name
-from .db import db, init_db
+from .db import db, init_db, register_flask_app
 
 
 def create_app(config_name: Optional[str] = None) -> Flask:
@@ -51,6 +51,7 @@ def create_app(config_name: Optional[str] = None) -> Flask:
 
     # 2. Initialize Database Persistence
     db.init_app(app)
+    register_flask_app(app)
     init_db(app)
 
     # 3. Configure CORS (Cross-Origin Resource Sharing)

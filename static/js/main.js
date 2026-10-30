@@ -8,6 +8,31 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+    function showToast(message, type = "success") {
+        let container = document.getElementById("toast-container");
+        if (!container) {
+            container = document.createElement("div");
+            container.id = "toast-container";
+            container.style.cssText = "position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;";
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement("div");
+        const colors = {
+            success: "border-left: 4px solid #10b981; background: rgba(15, 23, 42, 0.95); color: #f8fafc;",
+            error: "border-left: 4px solid #f43f5e; background: rgba(15, 23, 42, 0.95); color: #f8fafc;",
+            info: "border-left: 4px solid #38bdf8; background: rgba(15, 23, 42, 0.95); color: #f8fafc;",
+            warn: "border-left: 4px solid #f59e0b; background: rgba(15, 23, 42, 0.95); color: #f8fafc;",
+        };
+        toast.style.cssText = `${colors[type] || colors.info} pointer-events: auto; padding: 12px 18px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); font-size: 0.9rem; font-weight: 500; font-family: Inter, sans-serif; display: flex; align-items: center; gap: 10px; max-width: 400px; backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);`;
+        const icon = type === "success" ? "✅" : (type === "error" ? "❌" : (type === "warn" ? "⚠️" : "ℹ️"));
+        toast.innerHTML = `<span style="font-size: 1.1rem;">${icon}</span><span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(50px)";
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
     // -------------------------------------------------------------------------
     // DOM Elements
     // -------------------------------------------------------------------------
@@ -92,9 +117,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     statApiStatus.className = "stat-value text-emerald";
                 }
                 if (statLatency) statLatency.textContent = `${latency} ms`;
-                if (statDbStatus && statusData && statusData.data) {
-                    statDbStatus.textContent = `${statusData.data.database_status} (SQLite)`;
-                    statDbStatus.className = "stat-value text-emerald";
+                if (statDbStatus) {
+                    const dbConnected = (healthData && healthData.database && healthData.database.connected) || (healthData && healthData.status === "healthy");
+                    statDbStatus.textContent = dbConnected ? "Online (SQLite)" : "Offline (SQLite)";
+                    statDbStatus.className = dbConnected ? "stat-value text-emerald" : "stat-value text-rose";
                 }
                 if (jsonOutput) {
                     jsonOutput.innerHTML = `<code>${JSON.stringify({ health: healthData, system_status: statusData ? statusData.data : null }, null, 2)}</code>`;
@@ -469,6 +495,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectActivePortfolio = document.getElementById("select-active-portfolio");
     const btnDeleteActivePortfolio = document.getElementById("btn-delete-active-portfolio");
     const btnRebalancePortfolio = document.getElementById("btn-rebalance-portfolio");
+    const portfolioPaperStatusBadge = document.getElementById("portfolio-paper-status-badge");
+    const btnTogglePaperTrading = document.getElementById("btn-toggle-paper-trading");
     const simTotalPnl = document.getElementById("sim-total-pnl");
     const holdingsTableBody = document.getElementById("holdings-table-body");
     const portfolioEquityChart = document.getElementById("portfolio-equity-chart");
@@ -572,7 +600,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnAddToBucket.addEventListener("click", () => {
             const sym = bucketStockSelect.value;
             if (bucketItems.some(x => x.symbol === sym)) {
-                alert(`Stock ${sym} is already in the bucket.`);
+                showToast(`Stock ${sym} is already in the bucket.`, "warn");
                 return;
             }
             bucketItems.push({ symbol: sym, weight: 0.0 });
@@ -617,7 +645,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnCreatePortfolio.addEventListener("click", async () => {
             if (createPortfolioMsg) createPortfolioMsg.style.display = "none";
 
-            const name = (inputPortfolioName ? inputPortfolioName.value : "").trim();
+            const name = (inputPortfolioName ? inputPortfolioName.value : "").trim() || "Alpha_Two_Stock_Fund";
             if (!name) {
                 if (createPortfolioMsg) {
                     createPortfolioMsg.textContent = "Please enter a unique portfolio name.";
@@ -669,7 +697,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (inputPortfolioName) inputPortfolioName.value = "";
                     await loadPortfoliosList();
                     await loadActivePortfolio(name);
-                    alert(`Portfolio "${name}" created successfully with ${bucketItems.length} bucket stocks!`);
+                    showToast(`Portfolio "${name}" created successfully with ${bucketItems.length} bucket stocks!`, "success");
                     const simSection = document.getElementById("simulation-card");
                     if (simSection) simSection.scrollIntoView({ behavior: "smooth" });
                 } else {
@@ -728,7 +756,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnDeleteActivePortfolio) {
         btnDeleteActivePortfolio.addEventListener("click", async () => {
             if (currentActivePortfolioName === "default") {
-                alert("The default portfolio cannot be deleted.");
+                showToast("The default portfolio cannot be deleted.", "warn");
                 return;
             }
             if (!confirm(`Are you sure you want to delete portfolio "${currentActivePortfolioName}"? All its positions and trades will be removed.`)) {
@@ -742,12 +770,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     currentActivePortfolioName = "default";
                     await loadPortfoliosList();
                     await loadActivePortfolio("default");
-                    alert("Portfolio deleted.");
+                    showToast("Portfolio deleted.", "info");
                 } else {
-                    alert(`Failed to delete: ${result.error || "Unknown error"}`);
+                    showToast(`Failed to delete: ${result.error || "Unknown error"}`, "error");
                 }
             } catch (err) {
-                alert(`Network error deleting portfolio: ${err.message}`);
+                showToast(`Network error deleting portfolio: ${err.message}`, "error");
             }
         });
     }
@@ -766,14 +794,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 const result = await res.json();
                 if (res.ok && result.success && result.data) {
                     const d = result.data;
-                    alert(`Rebalance completed! ${d.trades_count} trade orders executed across bucket stocks.`);
+                    showToast(`Rebalance completed! ${d.trades_count} trade orders executed across bucket stocks.`, "success");
                     await loadActivePortfolio(currentActivePortfolioName);
                 } else {
                     const err = result.error ? (result.error.message || result.error) : "Rebalance failed.";
-                    alert(`Rebalance error: ${err}`);
+                    showToast(`Rebalance error: ${err}`, "error");
                 }
             } catch (err) {
-                alert(`Network error during rebalance: ${err.message}`);
+                showToast(`Network error during rebalance: ${err.message}`, "error");
             } finally {
                 btnRebalancePortfolio.disabled = false;
                 btnRebalancePortfolio.innerHTML = `<span>🔄</span> Rebalance Portfolio`;
@@ -781,12 +809,42 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    if (btnTogglePaperTrading) {
+        btnTogglePaperTrading.addEventListener("click", async () => {
+            const isCurrentlyActive = btnTogglePaperTrading.dataset.active === "true";
+            const targetAction = isCurrentlyActive ? "stop" : "start";
+            btnTogglePaperTrading.disabled = true;
+            try {
+                const res = await fetch(`/api/v1/trading/portfolios/${currentActivePortfolioName}/${targetAction}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({})
+                });
+                const result = await res.json();
+                if (res.ok && result.success) {
+                    await loadActivePortfolio(currentActivePortfolioName);
+                } else {
+                    const errMsg = result.error ? (result.error.message || result.error) : "Failed to toggle automated trading.";
+                    showToast(`Toggle error: ${errMsg}`, "error");
+                }
+            } catch (err) {
+                showToast(`Network error toggling paper trading: ${err.message}`, "error");
+            } finally {
+                btnTogglePaperTrading.disabled = false;
+            }
+        });
+    }
+
     async function loadEquityCurve(portfolioName) {
-        if (!portfolioEquityChart) return;
+        if (!portfolioEquityChart || !portfolioName) return;
         try {
-            const res = await fetch(`/api/v1/trading/portfolios/${portfolioName}/snapshots`, { cache: "no-store" });
+            const res = await fetch(`/api/v1/trading/portfolios/${encodeURIComponent(portfolioName)}/snapshots`, { cache: "no-store" });
+            if (!res.ok) {
+                console.warn(`Snapshot fetch failed for '${portfolioName}': HTTP ${res.status}`);
+                return;
+            }
             const result = await res.json();
-            const snapshots = (result.ok && result.success && Array.isArray(result.data)) ? result.data : [];
+            const snapshots = (result.success && Array.isArray(result.data)) ? result.data : [];
 
             if (snapshots.length === 0) {
                 portfolioEquityChart.innerHTML = `
@@ -802,8 +860,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const x = snapshots.map(s => s.timestamp.replace("T", " ").substring(0, 19));
-            const y = snapshots.map(s => s.portfolio_value);
+            const allSameTs = snapshots.length > 1 && snapshots.every(s => s.timestamp === snapshots[0].timestamp);
+            let x = snapshots.map((s, idx) => {
+                if (allSameTs && s.created_at) {
+                    return s.created_at.replace("T", " ").substring(0, 19);
+                }
+                const raw = s.timestamp || s.created_at || `Step ${idx + 1}`;
+                return raw.replace("T", " ").substring(0, 19);
+            });
+            let y = snapshots.map(s => s.portfolio_value);
+            if (snapshots.length === 1) {
+                const nowStr = new Date().toISOString().replace("T", " ").substring(0, 19);
+                x = [x[0], nowStr];
+                y = [y[0], y[0]];
+            }
 
             const trace = {
                 x: x,
@@ -819,8 +889,8 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             const layout = {
-                paper_bgcolor: "#0a0e17",
-                plot_bgcolor: "#0a0e17",
+                paper_bgcolor: "transparent",
+                plot_bgcolor: "transparent",
                 margin: { t: 20, r: 20, b: 35, l: 60 },
                 xaxis: {
                     showgrid: true,
@@ -849,6 +919,27 @@ document.addEventListener("DOMContentLoaded", () => {
             const result = await res.json();
             if (res.ok && result.success && result.data) {
                 const p = result.data;
+                const isActive = p.is_active !== undefined ? p.is_active : true;
+                if (portfolioPaperStatusBadge) {
+                    if (isActive) {
+                        portfolioPaperStatusBadge.className = "badge badge-success";
+                        portfolioPaperStatusBadge.style.background = "rgba(16, 185, 129, 0.2)";
+                        portfolioPaperStatusBadge.style.color = "var(--accent-emerald)";
+                        portfolioPaperStatusBadge.textContent = "Auto-Trading: ACTIVE";
+                    } else {
+                        portfolioPaperStatusBadge.className = "badge badge-neutral";
+                        portfolioPaperStatusBadge.style.background = "rgba(148, 163, 184, 0.2)";
+                        portfolioPaperStatusBadge.style.color = "var(--text-muted)";
+                        portfolioPaperStatusBadge.textContent = "Auto-Trading: PAUSED";
+                    }
+                }
+                if (btnTogglePaperTrading) {
+                    btnTogglePaperTrading.dataset.active = isActive ? "true" : "false";
+                    btnTogglePaperTrading.innerHTML = isActive
+                        ? `<span>⏸️</span> Pause Auto-Trading`
+                        : `<span>▶️</span> Resume Auto-Trading`;
+                }
+
                 if (simCash) simCash.textContent = formatCurrencyINR(p.cash);
                 if (simTotalValue) simTotalValue.textContent = formatCurrencyINR(p.portfolio_value);
                 if (simPeakDd) {
@@ -942,7 +1033,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (trades.length === 0) {
                 tradesTableBody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="empty-state">
+                        <td colspan="9" class="empty-state">
                             <div class="empty-state-icon">📝</div>
                             <div class="empty-state-text">No simulated trades recorded for '${portfolioName}'. Click 'Rebalance' or 'Execute Single-Asset Step'.</div>
                         </td>
@@ -955,6 +1046,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? `<span class="badge badge-success">BUY</span>`
                     : (t.action === "SELL" ? `<span class="badge badge-danger">SELL</span>` : `<span class="badge badge-neutral">${t.action}</span>`);
                 const grossVal = t.price * t.quantity;
+                const signalBadge = t.signal_id
+                    ? `<span class="badge" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.72rem;" title="${t.signal_id}">⚡ ${t.signal_id.substring(0, 8)}...</span>`
+                    : `<span style="color: var(--text-muted); font-size: 0.8rem;">Direct/Rebal</span>`;
 
                 return `
                     <tr>
@@ -966,6 +1060,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td class="mono-cell">${formatCurrencyINR(grossVal)}</td>
                         <td class="mono-cell">${formatCurrencyINR(t.fee)}</td>
                         <td><span class="badge badge-success">${t.risk_status}</span></td>
+                        <td>${signalBadge}</td>
                     </tr>`;
             }).join("");
         } catch (err) {
@@ -1053,10 +1148,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     await loadActivePortfolio(currentActivePortfolioName);
                 } else {
                     const msg = result.error ? (result.error.message || result.error) : "Simulation step error";
-                    alert(`Simulation step error: ${msg}`);
+                    showToast(`Simulation step error: ${msg}`, "error");
                 }
             } catch (err) {
-                alert(`Network error executing step: ${err.message}`);
+                showToast(`Network error executing step: ${err.message}`, "error");
             } finally {
                 btnRunSimStep.disabled = false;
                 if (simSpinner) simSpinner.style.display = "none";
@@ -1451,8 +1546,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 bgcolor: "rgba(15, 23, 42, 0.6)",
             },
             margin: { t: 35, r: 50, b: 35, l: 55 },
-            plot_bgcolor: "#070a12",
-            paper_bgcolor: "#070a12",
+            plot_bgcolor: "transparent",
+            paper_bgcolor: "transparent",
             font: { color: "#cbd5e1", family: "Inter, sans-serif" },
             xaxis: {
                 rangeslider: { visible: false },
@@ -1637,19 +1732,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 // 1. Connection status badge & buttons
                 if (liveConnBadge) {
                     const st = data.connection.status;
-                    liveConnBadge.textContent = st + (data.connection.is_stale ? " (STALE)" : "");
+                    const prov = (data.connection.provider || "mock").toLowerCase();
+                    const provTag = prov === "mock" ? "SIMULATED" : "BROKER";
+
                     if (st === "CONNECTED" && !data.connection.is_stale) {
+                        liveConnBadge.textContent = `LIVE (${provTag})`;
                         liveConnBadge.style.background = "rgba(16, 185, 129, 0.2)";
                         liveConnBadge.style.color = "var(--accent-emerald)";
                         if (btnLiveConnect) btnLiveConnect.style.display = "none";
                         if (btnLiveDisconnect) btnLiveDisconnect.style.display = "inline-flex";
                     } else if (st === "STALE" || data.connection.is_stale) {
+                        liveConnBadge.textContent = "STALE FEED";
                         liveConnBadge.style.background = "rgba(244, 63, 94, 0.2)";
                         liveConnBadge.style.color = "var(--accent-rose)";
+                    } else if (st === "AUTH_FAILED") {
+                        liveConnBadge.textContent = "AUTH_FAILED (Broker)";
+                        liveConnBadge.style.background = "rgba(239, 68, 68, 0.2)";
+                        liveConnBadge.style.color = "var(--accent-rose)";
+                        if (btnLiveConnect) {
+                            btnLiveConnect.style.display = "inline-flex";
+                            btnLiveConnect.innerHTML = `<span>🔄</span> Connect Simulated Feed`;
+                        }
+                        if (btnLiveDisconnect) btnLiveDisconnect.style.display = "none";
                     } else {
+                        liveConnBadge.textContent = st;
                         liveConnBadge.style.background = "rgba(148, 163, 184, 0.2)";
                         liveConnBadge.style.color = "var(--text-muted)";
-                        if (btnLiveConnect) btnLiveConnect.style.display = "inline-flex";
+                        if (btnLiveConnect) {
+                            btnLiveConnect.style.display = "inline-flex";
+                            btnLiveConnect.innerHTML = `<span>🔌</span> Connect Feed`;
+                        }
                         if (btnLiveDisconnect) btnLiveDisconnect.style.display = "none";
                     }
                 }
@@ -1754,6 +1866,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (feats.ready) {
                         liveStatFeatures.textContent = "Ready (12-d Vector)";
                         liveStatFeatures.className = "stat-value text-emerald";
+                    } else if (feats.timeframe_mismatch && feats.features) {
+                        liveStatFeatures.textContent = `Intraday 12-d Ready (${liveInterval})`;
+                        liveStatFeatures.className = "stat-value text-emerald";
                     } else if (feats.timeframe_mismatch) {
                         liveStatFeatures.textContent = `Timeframe Mismatch`;
                         liveStatFeatures.className = "stat-value text-amber";
@@ -1763,7 +1878,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
                 if (liveFeatureAlert) {
-                    liveFeatureAlert.textContent = feats.reason || "Evaluating PPO feature pipeline compatibility...";
+                    if (feats.features && feats.timeframe_mismatch) {
+                        const rsi = feats.features.rsi_14 !== undefined ? feats.features.rsi_14 : "--";
+                        const macd = feats.features.macd_histogram !== undefined ? feats.features.macd_histogram : "--";
+                        liveFeatureAlert.textContent = `12-d observation computed on ${liveInterval} bars (RSI: ${rsi}, MACD: ${macd}). PPO model policy is trained on 1d timeframe.`;
+                    } else {
+                        liveFeatureAlert.textContent = feats.reason || "Evaluating PPO feature pipeline compatibility...";
+                    }
                 }
 
             } catch (err) {
@@ -1790,11 +1911,31 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
+        const DEFAULT_FEED_SYMBOLS = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "ICICIBANK.NS", "SBIN.NS"];
+
+        async function ensureSubscriptions() {
+            try {
+                await fetch("/api/v1/realtime/subscribe", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ symbols: DEFAULT_FEED_SYMBOLS }),
+                });
+            } catch (e) {
+                console.warn("Failed to subscribe symbols:", e);
+            }
+        }
+
         if (btnLiveConnect) {
             btnLiveConnect.addEventListener("click", async () => {
                 try {
                     btnLiveConnect.disabled = true;
-                    await fetch("/api/v1/realtime/connect", { method: "POST" });
+                    btnLiveConnect.innerHTML = `<span>⏳</span> Connecting...`;
+                    await fetch("/api/v1/realtime/connect", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ provider: "mock", symbols: DEFAULT_FEED_SYMBOLS }),
+                    });
+                    await ensureSubscriptions();
                     await fetchLiveDashboard();
                 } catch (e) {
                     console.error("Connect failed:", e);
@@ -1845,9 +1986,387 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        // Initial fetch and start loop
-        fetchLiveDashboard();
+        // Auto-connect to live simulated feed if disconnected or auth failed
+        async function checkAndAutoConnect() {
+            try {
+                const res = await fetch(`/api/v1/realtime/dashboard?symbol=${encodeURIComponent(liveSymbol)}&interval=${encodeURIComponent(liveInterval)}`);
+                const json = await res.json();
+                if (json.success && json.data) {
+                    const st = json.data.connection ? json.data.connection.status : null;
+                    const subs = json.data.subscribed_symbols || [];
+                    if (st === "DISCONNECTED" || st === "AUTH_FAILED") {
+                        await fetch("/api/v1/realtime/connect", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ provider: "mock", symbols: DEFAULT_FEED_SYMBOLS }),
+                        });
+                        await ensureSubscriptions();
+                    } else if (st === "CONNECTED" && subs.length === 0) {
+                        await ensureSubscriptions();
+                    }
+                }
+            } catch (e) {
+                console.warn("Auto-connect feed failed:", e);
+            }
+            await fetchLiveDashboard();
+        }
+
+        checkAndAutoConnect();
         startPolling();
+    }
+
+    // =========================================================================
+    // Phase 12: Real-Time RL Policy Trading Signals Dashboard Controller
+    // =========================================================================
+    function initRLSignalsDashboard() {
+        const signalsCardsGrid = document.getElementById("signals-cards-grid");
+        const signalsTableBody = document.getElementById("signals-table-body");
+        const signalsServiceBadge = document.getElementById("signals-service-badge");
+        const evalSymbolSelect = document.getElementById("eval-symbol-select");
+        const evalIntervalSelect = document.getElementById("eval-interval-select");
+        const btnEvalSignal = document.getElementById("btn-eval-signal");
+        const evalFeedback = document.getElementById("eval-feedback");
+        const btnRefreshSignals = document.getElementById("btn-refresh-signals");
+        const modalBackdrop = document.getElementById("signal-modal-backdrop");
+        const modalTitle = document.getElementById("modal-signal-title");
+        const modalBody = document.getElementById("modal-signal-body");
+        const btnCloseModal = document.getElementById("btn-close-signal-modal");
+
+        async function fetchLatestSignals() {
+            try {
+                const res = await fetch("/api/v1/signals/latest");
+                const json = await res.json();
+                if (!json.success || !json.data) return;
+
+                const signalsBySymbol = json.data;
+                const symbols = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "ICICIBANK.NS", "SBIN.NS"];
+
+                if (signalsCardsGrid) {
+                    signalsCardsGrid.innerHTML = symbols.map(sym => {
+                        const sig = signalsBySymbol[sym];
+                        if (!sig) {
+                            return `
+                                <div class="signal-card card-hold">
+                                    <div class="signal-card-header">
+                                        <span class="signal-sym-title">${sym}</span>
+                                        <span class="signal-action-pill pill-hold">NO SIGNAL</span>
+                                    </div>
+                                    <div class="signal-price-row">
+                                        <span class="signal-price-val">--</span>
+                                        <span class="signal-status-tag tag-rejected">STANDBY</span>
+                                    </div>
+                                    <div class="signal-meta-list">
+                                        <div class="signal-meta-row"><span>Status:</span> <span>Awaiting bar</span></div>
+                                        <div class="signal-meta-row"><span>Model:</span> <span>PPO (1d)</span></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        const effAction = (sig.effective_action || sig.action || "HOLD").toUpperCase();
+                        let actionClass = "pill-hold";
+                        let cardClass = "card-hold";
+                        let actionIcon = "⚪";
+
+                        if (effAction === "BUY") {
+                            actionClass = "pill-buy";
+                            cardClass = "card-buy";
+                            actionIcon = "🟢";
+                        } else if (effAction === "SELL") {
+                            actionClass = "pill-sell";
+                            cardClass = "card-sell";
+                            actionIcon = "🔴";
+                        }
+
+                        const statusVal = sig.status || "VALID";
+                        let tagClass = "tag-valid";
+                        if (statusVal === "RISK_BLOCKED") tagClass = "tag-blocked";
+                        else if (statusVal === "TIMEFRAME_MISMATCH") tagClass = "tag-mismatch";
+                        else if (statusVal === "REJECTED") tagClass = "tag-rejected";
+
+                        const priceStr = sig.close_price ? formatCurrencyINR(sig.close_price) : "--";
+                        const genTime = sig.timestamp ? new Date(sig.timestamp).toLocaleTimeString() : "--";
+                        const candleTime = sig.source_candle_timestamp ? sig.source_candle_timestamp.slice(0, 16) : "--";
+                        const modelTag = sig.model_id ? `${sig.model_id} (v${sig.model_version || "1.0"})` : "PPO Policy";
+
+                        return `
+                            <div class="signal-card ${cardClass}">
+                                <div class="signal-card-header">
+                                    <span class="signal-sym-title">${sym}</span>
+                                    <span class="signal-action-pill ${actionClass}">${actionIcon} ${effAction}</span>
+                                </div>
+                                <div class="signal-price-row">
+                                    <span class="signal-price-val">${priceStr}</span>
+                                    <span class="signal-status-tag ${tagClass}">${statusVal}</span>
+                                </div>
+                                <div class="signal-meta-list">
+                                    <div class="signal-meta-row"><span>Proposed Action:</span> <strong>${sig.proposed_action || effAction}</strong></div>
+                                    <div class="signal-meta-row"><span>Bar Time (${sig.interval || "1d"}):</span> <span>${candleTime}</span></div>
+                                    <div class="signal-meta-row"><span>Generated:</span> <span>${genTime}</span></div>
+                                    <div class="signal-meta-row"><span>Model ID:</span> <span style="font-family: var(--font-mono); font-size: 0.72rem;">${modelTag}</span></div>
+                                    <div class="signal-meta-row"><span>Freshness:</span> <span class="text-emerald">${sig.data_freshness || "FRESH"}</span></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join("");
+                }
+            } catch (e) {
+                console.error("Failed to fetch latest signals:", e);
+            }
+        }
+
+        async function fetchSignalHistory() {
+            try {
+                const res = await fetch("/api/v1/signals/history?page=1&page_size=12");
+                const json = await res.json();
+                if (!json.success || !json.data) return;
+
+                const signals = json.data;
+                if (signalsTableBody) {
+                    if (signals.length === 0) {
+                        signalsTableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No historical policy signals recorded yet.</td></tr>`;
+                        return;
+                    }
+
+                    signalsTableBody.innerHTML = signals.map(sig => {
+                        const effAction = (sig.effective_action || sig.action || "HOLD").toUpperCase();
+                        let actColor = "var(--text-muted)";
+                        if (effAction === "BUY") actColor = "var(--accent-emerald)";
+                        else if (effAction === "SELL") actColor = "var(--accent-rose)";
+
+                        let tagClass = "tag-valid";
+                        if (sig.status === "RISK_BLOCKED") tagClass = "tag-blocked";
+                        else if (sig.status === "TIMEFRAME_MISMATCH") tagClass = "tag-mismatch";
+                        else if (sig.status === "REJECTED") tagClass = "tag-rejected";
+
+                        const timeStr = sig.timestamp ? sig.timestamp.replace("T", " ").slice(0, 19) : "--";
+                        const priceStr = sig.close_price ? formatCurrencyINR(sig.close_price) : "--";
+
+                        return `
+                            <tr>
+                                <td style="font-family: var(--font-mono); font-size: 0.8rem;">${timeStr}</td>
+                                <td><strong>${sig.symbol}</strong></td>
+                                <td><span class="badge" style="background: rgba(255,255,255,0.06); font-size: 0.75rem;">${sig.interval || "1d"}</span></td>
+                                <td style="font-weight: 600;">${sig.proposed_action || "--"}</td>
+                                <td style="font-weight: 700; color: ${actColor};">${effAction}</td>
+                                <td style="font-family: var(--font-mono);">${priceStr}</td>
+                                <td><span class="signal-status-tag ${tagClass}">${sig.status || "VALID"}</span></td>
+                                <td style="font-size: 0.78rem; color: var(--text-muted);">${sig.model_id || "ppo_policy"}</td>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="window.inspectSignalDetails('${sig.id}')">
+                                        Audit
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join("");
+                }
+            } catch (e) {
+                console.error("Failed to fetch signals history:", e);
+            }
+        }
+
+        // Global inspection handler for modal
+        window.inspectSignalDetails = async function(signalId) {
+            try {
+                const res = await fetch(`/api/v1/signals/${signalId}`);
+                const json = await res.json();
+                if (!json.success || !json.data) return;
+
+                const sig = json.data;
+                if (modalTitle) modalTitle.textContent = `Signal Audit: ${sig.symbol} — ${sig.signal_id}`;
+
+                let obsHtml = "<p style='color: var(--text-muted);'>No observation vector generated.</p>";
+                if (sig.observation && Array.isArray(sig.observation)) {
+                    obsHtml = `
+                        <div style="background: rgba(0,0,0,0.4); padding: 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem; overflow-x: auto; margin-bottom: 1rem;">
+                            <strong>12-d Observation Vector:</strong><br/>
+                            [${sig.observation.map(v => typeof v === 'number' ? v.toFixed(4) : v).join(", ")}]
+                        </div>
+                    `;
+                }
+
+                let featsHtml = "";
+                if (sig.features && typeof sig.features === "object") {
+                    featsHtml = `
+                        <h4 style="font-size: 0.88rem; color: var(--text-primary); margin: 0.75rem 0 0.35rem 0;">Normalized Feature Breakdown:</h4>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.75rem;">
+                            ${Object.entries(sig.features).map(([k, v]) => `<div><span style="color: var(--text-muted);">${k}:</span> <strong>${v}</strong></div>`).join("")}
+                        </div>
+                    `;
+                }
+
+                let riskHtml = "";
+                if (sig.risk_evaluation) {
+                    riskHtml = `
+                        <h4 style="font-size: 0.88rem; color: var(--text-primary); margin: 0.75rem 0 0.35rem 0;">Pre-Trade Risk Engine Evaluation:</h4>
+                        <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 6px; font-size: 0.8rem;">
+                            <div>Status: <strong>${sig.risk_evaluation.status || "APPROVED"}</strong></div>
+                            ${sig.risk_evaluation.rule_breached ? `<div style="color: var(--accent-rose);">Rule Breached: ${sig.risk_evaluation.rule_breached}</div>` : ""}
+                            <div>Details: ${sig.risk_evaluation.details || "--"}</div>
+                        </div>
+                    `;
+                }
+
+                if (modalBody) {
+                    modalBody.innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                            <div><strong>Symbol:</strong> ${sig.symbol}</div>
+                            <div><strong>Timeframe:</strong> ${sig.interval}</div>
+                            <div><strong>Proposed Action:</strong> ${sig.proposed_action || "--"}</div>
+                            <div><strong>Effective Action:</strong> ${sig.effective_action}</div>
+                            <div><strong>Close Price:</strong> ${sig.close_price ? formatCurrencyINR(sig.close_price) : "--"}</div>
+                            <div><strong>Status:</strong> ${sig.status}</div>
+                            <div><strong>Source Bar Time:</strong> ${sig.source_candle_timestamp}</div>
+                            <div><strong>Generated Time:</strong> ${sig.timestamp}</div>
+                            <div><strong>Model Checksum:</strong> <span style="font-family: var(--font-mono); font-size: 0.72rem;">${sig.model_checksum ? sig.model_checksum.slice(0, 16) + '...' : '--'}</span></div>
+                            <div><strong>Rejection Reason:</strong> ${sig.rejection_reason || "None"}</div>
+                        </div>
+                        ${obsHtml}
+                        ${featsHtml}
+                        ${riskHtml}
+                    `;
+                }
+
+                if (modalBackdrop) modalBackdrop.style.display = "flex";
+            } catch (e) {
+                console.error("Error inspecting signal details:", e);
+            }
+        };
+
+        if (btnCloseModal && modalBackdrop) {
+            btnCloseModal.addEventListener("click", () => {
+                modalBackdrop.style.display = "none";
+            });
+            modalBackdrop.addEventListener("click", (e) => {
+                if (e.target === modalBackdrop) modalBackdrop.style.display = "none";
+            });
+        }
+
+        if (btnEvalSignal) {
+            btnEvalSignal.addEventListener("click", async () => {
+                const sym = evalSymbolSelect ? evalSymbolSelect.value : "RELIANCE.NS";
+                const inv = evalIntervalSelect ? evalIntervalSelect.value : "1d";
+
+                try {
+                    btnEvalSignal.disabled = true;
+                    if (evalFeedback) {
+                        evalFeedback.textContent = `Evaluating PPO policy for ${sym} (${inv})...`;
+                        evalFeedback.style.color = "var(--accent-indigo)";
+                    }
+
+                    const res = await fetch("/api/v1/signals/generate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ symbol: sym, interval: inv }),
+                    });
+                    const json = await res.json();
+
+                    if (json.success && json.data) {
+                        const s = json.data;
+                        if (evalFeedback) {
+                            evalFeedback.textContent = `Result: [${s.action || s.effective_action}] Status: ${s.status}`;
+                            evalFeedback.style.color = s.status === "VALID" ? "var(--accent-emerald)" : "var(--accent-amber)";
+                        }
+                        await fetchLatestSignals();
+                        await fetchSignalHistory();
+                    } else {
+                        if (evalFeedback) {
+                            evalFeedback.textContent = json.error ? json.error.message : "Evaluation failed.";
+                            evalFeedback.style.color = "var(--accent-rose)";
+                        }
+                    }
+                } catch (e) {
+                    console.error("Evaluation request error:", e);
+                    if (evalFeedback) {
+                        evalFeedback.textContent = "Request error during evaluation.";
+                        evalFeedback.style.color = "var(--accent-rose)";
+                    }
+                } finally {
+                    btnEvalSignal.disabled = false;
+                }
+            });
+        }
+
+        if (btnRefreshSignals) {
+            btnRefreshSignals.addEventListener("click", () => {
+                fetchLatestSignals();
+                fetchSignalHistory();
+            });
+        }
+
+        // Initial fetch and 4s background poll
+        fetchLatestSignals();
+        fetchSignalHistory();
+        setInterval(fetchLatestSignals, 4000);
+    }
+
+    // -------------------------------------------------------------------------
+    // UI Helpers: Toggle Payload, UTC Clock, Search & Nav Rail Scrollspy
+    // -------------------------------------------------------------------------
+    const btnTogglePayload = document.getElementById("btn-toggle-payload");
+    const payloadContainer = document.getElementById("payload-container");
+    if (btnTogglePayload && payloadContainer) {
+        btnTogglePayload.addEventListener("click", () => {
+            const isHidden = payloadContainer.style.display === "none";
+            payloadContainer.style.display = isHidden ? "block" : "none";
+            btnTogglePayload.innerHTML = isHidden ? "<span>📜</span> Hide JSON" : "<span>📜</span> Toggle JSON";
+        });
+    }
+
+    const headerClock = document.getElementById("header-clock");
+    function updateClock() {
+        if (headerClock) {
+            const now = new Date();
+            const utcStr = now.toISOString().slice(11, 19);
+            headerClock.textContent = `UTC ${utcStr}`;
+        }
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    const globalSearch = document.getElementById("global-search-input");
+    if (globalSearch) {
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "/" && document.activeElement !== globalSearch && !["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+                e.preventDefault();
+                globalSearch.focus();
+            }
+        });
+        globalSearch.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                const q = globalSearch.value.trim().toLowerCase();
+                if (!q) return;
+                const sections = ["hero-section", "diagnostics-section", "live-market-section", "signals-section", "chart-section", "bucket-section", "simulation-section", "datasets-section", "models-section", "modules-section"];
+                for (const s of sections) {
+                    const elem = document.getElementById(s);
+                    if (elem && elem.textContent.toLowerCase().includes(q)) {
+                        elem.scrollIntoView({ behavior: "smooth" });
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    const railLinks = document.querySelectorAll(".nav-rail .rail-item");
+    if (railLinks.length > 0) {
+        const sections = Array.from(railLinks).map(link => {
+            const secId = link.getAttribute("data-section");
+            return { link, elem: document.getElementById(secId) };
+        }).filter(item => item.elem !== null);
+
+        window.addEventListener("scroll", () => {
+            const scrollPos = window.scrollY + 180;
+            let current = sections[0];
+            for (const item of sections) {
+                if (item.elem.offsetTop <= scrollPos) {
+                    current = item;
+                }
+            }
+            railLinks.forEach(l => l.classList.remove("active"));
+            if (current) current.link.classList.add("active");
+        }, { passive: true });
     }
 
     // -------------------------------------------------------------------------
@@ -1861,5 +2380,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadActivePortfolio("default");
     initMarketChart();
     initLiveMarketDashboard();
+    initRLSignalsDashboard();
 });
+
 

@@ -40,6 +40,7 @@ class PaperPortfolio(db.Model):
     risk_config_json = db.Column(db.Text, nullable=True)
     description = db.Column(db.String(256), nullable=True)
     user_id = db.Column(db.String(64), default="default_user", nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)  # Automated paper-trading toggle
 
     bucket_items = db.relationship(
         "PortfolioBucketItem",
@@ -103,6 +104,7 @@ class PaperPortfolio(db.Model):
             "return_pct": round(return_pct, 2),
             "drawdown_pct": round(drawdown_pct, 2),
             "total_trades_count": self.total_trades_count,
+            "is_active": getattr(self, "is_active", True),
             "created_at": safe_serialize(self.created_at),
             "updated_at": safe_serialize(self.updated_at),
         }
@@ -244,6 +246,7 @@ class PaperTrade(db.Model):
         index=True,
         nullable=False,
     )
+    signal_id = db.Column(db.String(40), index=True, nullable=True)  # Lineage to RLTradingSignal
     symbol = db.Column(db.String(32), index=True, nullable=False)
     timestamp = db.Column(db.String(64), nullable=False)
     action = db.Column(db.String(16), nullable=False)  # BUY, SELL, HOLD
@@ -265,6 +268,7 @@ class PaperTrade(db.Model):
         return {
             "id": self.id,
             "portfolio_id": self.portfolio_id,
+            "signal_id": self.signal_id,
             "symbol": self.symbol,
             "timestamp": self.timestamp,
             "action": self.action,

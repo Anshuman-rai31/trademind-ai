@@ -106,7 +106,10 @@ class MockRealtimeProvider(RealtimeDataProvider):
             self.reconcile_subscriptions()
 
             if self.auto_tick_generation:
-                self._start_tick_loop()
+                if self._thread is None or not self._thread.is_alive():
+                    self._start_tick_loop()
+                if self.subscribed_symbols:
+                    self.emit_mock_ticks_for_subscribed()
 
             return True
 
@@ -133,6 +136,8 @@ class MockRealtimeProvider(RealtimeDataProvider):
         self.subscription_manager.mark_subscribing(to_add)
         self.subscription_manager.mark_subscribed(to_add)
         self._telemetry.subscribed_symbols_count = len(self.subscribed_symbols)
+        if self.auto_tick_generation and self.status == ConnectionStatus.CONNECTED:
+            self.emit_mock_ticks_for_subscribed()
         return True
 
     def unsubscribe(self, symbols: List[str]) -> bool:

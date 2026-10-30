@@ -42,7 +42,9 @@ class Config:
     NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
     
     # Real-Time Market Data Provider Configuration (Phase 11A)
-    REALTIME_PROVIDER = os.environ.get("REALTIME_PROVIDER", "kite")
+    # Default to mock simulator if live Kite credentials are not present in environment
+    _default_realtime_provider = "kite" if os.environ.get("KITE_API_KEY") else "mock"
+    REALTIME_PROVIDER = os.environ.get("REALTIME_PROVIDER", _default_realtime_provider)
     KITE_API_KEY = os.environ.get("KITE_API_KEY")
     KITE_ACCESS_TOKEN = os.environ.get("KITE_ACCESS_TOKEN")
     REALTIME_MAX_SUBSCRIPTIONS = int(os.environ.get("REALTIME_MAX_SUBSCRIPTIONS", "50"))

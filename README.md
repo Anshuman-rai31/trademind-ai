@@ -18,9 +18,10 @@ TradeMind is an institutional-grade quantitative trading research, feature engin
 - **Phase 9.5A: Historical Market Data Recovery & Validation** (Completed)
 - **Phase 9.5B: Persistent Storage, Database Integration & End-to-End System Integration** (Completed)
 - **Phase 10A: Interactive Market Visualization (Candlestick, Volume & Indicators)** (Completed)
-- **Phase 11A: Real-Time Market Data Provider Integration (Zerodha Kite & Mock)** (Completed)
+- **Phase 11A–11G: Real-Time Market Data Provider, Ingestion, Candle Construction & Dashboard** (Completed)
+- **Phase 12: Real-Time RL Policy Trading Signals & Risk Gating** (Completed)
 
-> **Simulation Boundary**: TradeMind is designed exclusively for offline historical research, feature engineering, and RL simulation. It does **not** connect to live brokerage APIs or execute real-money orders. No profitability claims are made.
+> **Simulation Boundary**: TradeMind is designed exclusively for offline historical research, feature engineering, and RL simulation. It does **not** connect to live brokerage APIs for order routing or execute real-money orders. No profitability claims are made.
 
 ---
 
@@ -413,6 +414,28 @@ TradeMind AI incorporates a modular real-time streaming market data subsystem (P
 - **Automatic Reconnection & Reconciliation**: Bounded exponential backoff retry loop with automatic resubscription of all desired instruments upon reconnect.
 - **Granular Activity Diagnostics**: Distinguishes between inactive instruments (liquid market absence during open connection) and broken socket connections (`is_stale`).
 - **Zero Credential Exposure**: In-memory credential isolation; credentials and tokens are strictly filtered out of API responses, frontend payloads, and log entries.
+
+---
+
+## 🧠 Phase 12: Real-Time RL Policy Trading Signals
+
+TradeMind AI evaluates live completed market candles through the trained PPO policy model (`RLSignalService`) to generate deterministic trading signals (`BUY`, `SELL`, `HOLD`) with rigorous timeframe protection and pre-trade risk gating:
+- **Model & Timeframe Safety**: Validates input observations against the canonical 12-dimensional schema. Since the PPO model was trained on daily (`1d`) observations, intraday requests (`1m`, `5m`) are strictly classified as `TIMEFRAME_MISMATCH` with zero trades generated.
+- **Pre-Trade Risk Engine Gating**: Orders are inspected against institutional risk constraints (drawdown, max exposure, allocation limits). High-risk signals are classified as `RISK_BLOCKED`.
+- **Comprehensive Audit Trail**: Persists the full 12-dimensional observation vector, normalized features, and risk intervention details in `rl_trading_signals`.
+
+---
+
+## 📈 Phase 13: Automated Paper Trading Engine
+
+Phase 13 implements a reliable automated paper-trading execution engine (`PaperTradingService`) that consumes validated PPO signals and executes simulated trades against isolated virtual portfolios:
+- **Strict Simulation Boundary**: Strictly NO real-money order routing or broker API connectivity.
+- **Idempotency & Duplicate Prevention**: Composite tracking `(portfolio_id, signal_id)` ensures the exact same signal can never execute multiple times.
+- **Multi-Portfolio Isolation**: Virtual portfolios maintain independent initial capital, available cash, positions, trade history, peak equity, and risk limits.
+- **Institutional Transaction Cost Modeling**: Configurable slippage (default 5 bps, 0.05%) and commission fees (default 3 bps, 0.03%) with accurate weighted average cost basis accounting.
+- **Pre-Trade Risk Gateway**: Real-time integration with `RiskManager` blocking orders when portfolio drawdown exceeds configured limits.
+- **Per-Portfolio Automation Toggle**: Ability to start and pause automated paper trading per portfolio (`/start`, `/stop`, `is_active`).
+- **Signal-to-Trade Audit Lineage**: Complete bidirectional traceability between generated `RLTradingSignal` and resulting `PaperTrade` records.
 
 ---
 

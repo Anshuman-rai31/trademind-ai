@@ -39,6 +39,7 @@ class RealtimeMarketDataManager:
         ingestion_service: Optional[LiveMarketDataIngestionService] = None,
         candle_builder: Optional[CandleBuilderService] = None,
         feature_pipeline: Optional[LiveFeaturePipeline] = None,
+        signal_service: Optional[Any] = None,
     ):
         self.config = config or ProviderConfig()
         self.validator = validator or RealtimeDataValidator()
@@ -56,8 +57,9 @@ class RealtimeMarketDataManager:
         self.feature_pipeline = feature_pipeline or LiveFeaturePipeline(
             trained_model_timeframe="1d",
         )
+        self.signal_service = signal_service
 
-        # Wire pipeline: provider -> ingestion -> candle builder
+        # Wire pipeline: provider -> ingestion -> candle builder -> signals
         self._wire_subsystems()
 
         self._active_portfolio_name: Optional[str] = "default"
@@ -68,6 +70,14 @@ class RealtimeMarketDataManager:
         """Connect provider callbacks to ingestion and candle construction."""
         self.provider.register_callback(self.ingestion_service.ingest_quote)
         self.ingestion_service.register_consumer(self.candle_builder.on_tick)
+        if self.signal_service is not None and hasattr(self.signal_service, "on_completed_candle"):
+            self.candle_builder.register_candle_consumer(self.signal_service.on_completed_candle)
+
+    def attach_signal_service(self, signal_service: Any) -> None:
+        """Dynamically attach signal generation service to completed candle stream."""
+        self.signal_service = signal_service
+        if hasattr(signal_service, "on_completed_candle"):
+            self.candle_builder.register_candle_consumer(signal_service.on_completed_candle)
 
     @classmethod
     def get_instance(cls, config: Optional[ProviderConfig] = None) -> RealtimeMarketDataManager:
@@ -92,8 +102,14 @@ class RealtimeMarketDataManager:
     ) -> RealtimeDataProvider:
         """Instantiate selected provider backend based on configuration."""
         if config.provider_name.lower() == "kite":
+            if not config.has_credentials():
+                logger.warning(
+                    "Kite provider requested but KITE_API_KEY / KITE_ACCESS_TOKEN are not configured in environment. "
+                    "Auto-fallback to MockRealtimeProvider with live simulated tick generation."
+                )
+                return MockRealtimeProvider(config=config, validator=validator, auto_tick_generation=True)
             return KiteRealtimeProvider(config=config, validator=validator)
-        return MockRealtimeProvider(config=config, validator=validator)
+        return MockRealtimeProvider(config=config, validator=validator, auto_tick_generation=True)
 
     def set_provider(self, provider: RealtimeDataProvider) -> None:
         """Hot-swap provider instance (e.g. for testing with mock provider)."""
@@ -142,7 +158,20 @@ class RealtimeMarketDataManager:
 
     def get_symbol_freshness(self, symbol: str) -> Dict[str, Any]:
         """Retrieve instrument freshness and latency telemetry."""
-        return self.ingestion_service.get_symbol_freshness(symbol)
+        clean_sym = str(symbol).strip().upper()
+        f = self.ingestion_service.get_symbol_freshness(clean_sym)
+        if f.get("status") == "OFFLINE":
+            q = self.provider.get_latest_quote(clean_sym)
+            if q is not None:
+                self.ingestion_service.ingest_quote(q)
+                return self.ingestion_service.get_symbol_freshness(clean_sym)
+            elif self.provider.status == ConnectionStatus.CONNECTED:
+                if hasattr(self.provider, "emit_mock_ticks_for_subscribed"):
+                    quotes = self.provider.emit_mock_ticks_for_subscribed()
+                    for quote in quotes:
+                        self.ingestion_service.ingest_quote(quote)
+                    return self.ingestion_service.get_symbol_freshness(clean_sym)
+        return f
 
     def subscribe(self, symbols: List[str]) -> bool:
         """Subscribe provider to a list of symbols."""
@@ -196,12 +225,38 @@ class RealtimeMarketDataManager:
         include_in_progress: bool = True,
     ) -> List[Dict[str, Any]]:
         """Retrieve recent candles (completed + in-progress)."""
-        return self.candle_builder.get_recent_candles(
+        candles = self.candle_builder.get_recent_candles(
             symbol=symbol,
             interval=interval,
             limit=limit,
             include_in_progress=include_in_progress,
         )
+        if not candles and interval.lower() == "1d":
+            try:
+                from ..services.market_data_service import MarketDataService
+                mds = MarketDataService()
+                df = mds.get_historical_dataframe(symbol)
+                if df is not None and not df.empty:
+                    records = df.tail(limit).to_dict(orient="records")
+                    res = []
+                    for r in records:
+                        res.append({
+                            "symbol": symbol,
+                            "interval": "1d",
+                            "start_time": str(r.get("Date") or r.get("start_time") or r.get("timestamp")),
+                            "end_time": str(r.get("Date") or r.get("end_time") or r.get("timestamp")),
+                            "open": float(r.get("Open", 0.0)),
+                            "high": float(r.get("High", 0.0)),
+                            "low": float(r.get("Low", 0.0)),
+                            "close": float(r.get("Close", 0.0)),
+                            "volume": float(r.get("Volume", 0.0)),
+                            "source": "historical_csv",
+                            "is_complete": True,
+                        })
+                    return res
+            except Exception:
+                pass
+        return candles
 
     def get_in_progress_candle(self, symbol: str, interval: str = "5m") -> Optional[Dict[str, Any]]:
         """Retrieve active in-progress candle."""
@@ -256,14 +311,22 @@ class RealtimeMarketDataManager:
 
         # 1. Fetch subscribed instruments and freshness telemetry
         subscribed = self.get_subscribed_symbols()
+        if clean_sym not in subscribed and self.provider.status == ConnectionStatus.CONNECTED:
+            self.provider.subscribe([clean_sym])
+            subscribed = self.get_subscribed_symbols()
+
         quotes = self.get_all_quotes()
         freshness_map: Dict[str, Any] = {}
         quotes_summary: Dict[str, Any] = {}
 
-        for sym in subscribed:
+        symbols_to_report = list(subscribed)
+        if clean_sym not in symbols_to_report:
+            symbols_to_report.append(clean_sym)
+
+        for sym in symbols_to_report:
             f = self.get_symbol_freshness(sym)
             freshness_map[sym] = f
-            q = quotes.get(sym)
+            q = quotes.get(sym) or self.get_latest_quote(sym)
             if q:
                 quotes_summary[sym] = {
                     "symbol": sym,

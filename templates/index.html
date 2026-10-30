@@ -4,42 +4,59 @@
 
 {% block content %}
 <div class="landing-container">
-    <!-- Hero Section -->
+    <!-- Hero / Platform Overview Section -->
     <section class="hero-section" id="hero-section">
         <div class="hero-badge">
             <span class="badge-dot"></span>
-            <span>Persistent Quantitative Engine</span>
+            <span>Deterministic Quantitative Research &amp; RL Simulation</span>
         </div>
         <h1 class="hero-title" id="main-heading">
             Trade<span class="gradient-text">Mind</span>
+            <span class="hero-version-tag">AI v0.1.0</span>
         </h1>
         <p class="hero-subtitle">
-            Next-generation quantitative trading research, reinforcement learning simulation, and institutional risk management on Indian NSE stocks.
+            Next-generation quantitative trading research, reinforcement learning simulation, and institutional risk management on Indian National Stock Exchange (NSE) equities.
         </p>
+
+        <!-- Platform Metadata Cards Strip -->
         <div class="hero-meta-strip">
             <div class="meta-item">
-                <span class="meta-label">Milestone</span>
-                <span class="meta-value text-emerald">Phase 1: Project Setup &bull; Phase 9.5B Integration</span>
+                <span class="meta-icon">🎯</span>
+                <div class="meta-content">
+                    <span class="meta-label">Milestone</span>
+                    <span class="meta-value text-emerald">Phase 1: Project Setup &bull; Phase 1–13 Integration</span>
+                </div>
             </div>
             <div class="meta-item">
-                <span class="meta-label">Application DB</span>
-                <span class="meta-value text-indigo">SQLite (instance/trademind.db)</span>
+                <span class="meta-icon">🗄️</span>
+                <div class="meta-content">
+                    <span class="meta-label">Application DB</span>
+                    <span class="meta-value text-indigo">SQLite (instance/trademind.db)</span>
+                </div>
             </div>
             <div class="meta-item">
-                <span class="meta-label">Historical Data</span>
-                <span class="meta-value text-cyan">5 NSE Assets (2,469 Bars Validated)</span>
+                <span class="meta-icon">📈</span>
+                <div class="meta-content">
+                    <span class="meta-label">Historical Universe</span>
+                    <span class="meta-value text-cyan">5 Core NSE Assets (2,469 Bars)</span>
+                </div>
             </div>
             <div class="meta-item">
-                <span class="meta-label">RL Inference</span>
-                <span class="meta-value">SB3 PPO Policy & Risk Engine</span>
+                <span class="meta-icon">🤖</span>
+                <div class="meta-content">
+                    <span class="meta-label">Policy Engine</span>
+                    <span class="meta-value text-purple">SB3 PPO Policy &amp; Risk Gate</span>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Notice / Disclaimer Banner -->
-    <div class="notice-banner info">
-        <span>🛡️</span>
-        <div><strong>Simulation & Research Environment:</strong> TradeMind AI is strictly a quantitative research and paper-trading simulation platform. No live orders or real-money brokerage connections exist. No claims of profitability are made.</div>
+    <div class="notice-banner info" id="platform-disclaimer-banner">
+        <span class="notice-icon">🛡️</span>
+        <div class="notice-text">
+            <strong>Simulation &amp; Research Environment:</strong> TradeMind AI is strictly a quantitative research and paper-trading simulation platform. All trade executions, order fills, slippage, and fee accounting are synthetic simulations. No live brokerage connections exist and no capital is at risk.
+        </div>
     </div>
 
     <!-- System Diagnostics & Health Status Widget -->
@@ -47,37 +64,66 @@
         <div class="card glass-card diagnostics-card" id="health-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <span class="card-icon">⚡</span>
-                    <h2 class="card-title">System Health & Runtime Status</h2>
+                    <div class="card-icon-badge icon-amber">⚡</div>
+                    <div>
+                        <h2 class="card-title">System Health &amp; Runtime Status</h2>
+                        <span class="section-desc">Active runtime integrity, SQLite persistence, and API endpoint latency.</span>
+                    </div>
                 </div>
-                <button class="btn btn-primary" id="btn-check-health" type="button">
-                    <span class="btn-text">Probe /api/health</span>
-                </button>
+                <div class="header-action-group">
+                    <button class="btn btn-primary" id="btn-check-health" type="button">
+                        <span class="btn-icon">⚡</span>
+                        <span class="btn-text">Probe /api/health</span>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="btn-toggle-payload" type="button" title="Toggle Raw JSON Output">
+                        <span>📜</span> Toggle JSON
+                    </button>
+                </div>
             </div>
             
             <div class="card-body">
                 <div class="diagnostics-grid">
                     <div class="diagnostic-stat">
-                        <span class="stat-name">Flask Application</span>
-                        <span class="stat-value text-emerald" id="stat-flask">Running</span>
+                        <div class="stat-top">
+                            <span class="stat-name">Flask Application</span>
+                            <span class="stat-dot dot-emerald"></span>
+                        </div>
+                        <span class="stat-value text-emerald" id="stat-api-status">Running (200 OK)</span>
+                        <span class="stat-sub">WSGI Threaded Server</span>
                     </div>
                     <div class="diagnostic-stat">
-                        <span class="stat-name">Database Integrity</span>
+                        <div class="stat-top">
+                            <span class="stat-name">Database Integrity</span>
+                            <span class="stat-dot dot-emerald"></span>
+                        </div>
                         <span class="stat-value text-emerald" id="stat-db-status">Online (SQLite)</span>
+                        <span class="stat-sub">WAL Mode Enabled</span>
                     </div>
                     <div class="diagnostic-stat">
-                        <span class="stat-name">Active Models</span>
+                        <div class="stat-top">
+                            <span class="stat-name">Active Models</span>
+                            <span class="stat-dot dot-cyan"></span>
+                        </div>
                         <span class="stat-value text-cyan" id="stat-models-count">Checking...</span>
+                        <span class="stat-sub">SB3 Checkpoint Registry</span>
                     </div>
                     <div class="diagnostic-stat">
-                        <span class="stat-name">Response Latency</span>
+                        <div class="stat-top">
+                            <span class="stat-name">Response Latency</span>
+                            <span class="stat-dot dot-indigo"></span>
+                        </div>
                         <span class="stat-value" id="stat-latency">-- ms</span>
+                        <span class="stat-sub">Round-trip Health Latency</span>
                     </div>
                 </div>
 
-                <div class="health-payload-box" id="payload-container">
+                <!-- Live Payload Box with Header & Preformatted JSON -->
+                <div class="health-payload-box" id="payload-container" style="display: none;">
                     <div class="payload-header">
-                        <span class="payload-title">Live Payload from <code>/api/health</code> & <code>/api/v1/system/status</code></span>
+                        <div class="payload-header-left">
+                            <span class="payload-badge">LIVE PAYLOAD</span>
+                            <span class="payload-title"><code>/api/health</code> &amp; <code>/api/v1/system/status</code></span>
+                        </div>
                         <span class="payload-timestamp" id="payload-time">Awaiting trigger</span>
                     </div>
                     <pre class="code-block" id="health-json-output"><code>{ "message": "Probing system status..." }</code></pre>
@@ -86,19 +132,19 @@
         </div>
     </section>
 
-    <!-- Live Streaming Market Feed & Intraday Candles (Phase 11F) -->
-    <section class="live-market-section" id="live-market-section" style="margin-bottom: 2rem;">
+    <!-- Live Streaming Market Feed & Intraday Candles -->
+    <section class="live-market-section" id="live-market-section">
         <div class="card glass-card live-market-card" id="live-feed-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <span class="card-icon">⚡</span>
+                    <div class="card-icon-badge icon-cyan">📡</div>
                     <div>
-                        <h2 class="card-title">Live Real-Time Market Feed & Intraday Candles</h2>
+                        <h2 class="card-title">Live Real-Time Market Feed &amp; Intraday Candles</h2>
                         <span class="section-desc">Streaming ticks, dynamic candle construction (1m / 5m), and live PPO feature readiness.</span>
                     </div>
                 </div>
                 <div class="toolbar-group">
-                    <span class="badge" id="live-conn-badge" style="background: rgba(148, 163, 184, 0.2); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">DISCONNECTED</span>
+                    <span class="badge badge-neutral" id="live-conn-badge">DISCONNECTED</span>
                     <button class="btn btn-primary btn-sm" id="btn-live-connect" type="button">
                         <span>🔌</span> Connect Feed
                     </button>
@@ -109,13 +155,13 @@
             </div>
 
             <div class="card-body">
-                <!-- Live Ticker Bar across subscribed instruments -->
-                <div class="live-ticker-strip" id="live-ticker-strip" style="display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                    <div style="font-size: 0.85rem; color: var(--text-muted); padding: 0.5rem;">Awaiting feed connection to stream live quotes...</div>
+                <!-- Live Ticker Strip across subscribed instruments -->
+                <div class="live-ticker-strip" id="live-ticker-strip">
+                    <div class="live-ticker-placeholder">Awaiting feed connection to stream live quotes...</div>
                 </div>
 
                 <!-- Feed Controls Toolbar -->
-                <div class="chart-toolbar" style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                <div class="chart-toolbar">
                     <div class="toolbar-group">
                         <span class="toolbar-label">Active Symbol:</span>
                         <select id="live-symbol-select" class="control-select">
@@ -138,17 +184,19 @@
 
                     <div class="toolbar-group">
                         <span class="toolbar-label">Feed Polling:</span>
-                        <button type="button" class="btn btn-secondary btn-sm" id="btn-live-toggle-poll">
+                        <button type="button" class="btn btn-secondary btn-sm pill-btn" id="btn-live-toggle-poll">
                             <span id="poll-indicator">🟢</span> Polling Active (2s)
                         </button>
                     </div>
                 </div>
 
                 <!-- Live Intraday Candlestick Chart -->
-                <div id="live-candlestick-chart" style="width: 100%; height: 420px; background: rgba(15, 23, 42, 0.4); border-radius: 8px;"></div>
+                <div class="chart-plot-container">
+                    <div id="live-candlestick-chart"></div>
+                </div>
 
                 <!-- Telemetry & Diagnostic Footer -->
-                <div class="diagnostics-grid" style="margin-top: 1rem;">
+                <div class="diagnostics-grid telemetry-grid">
                     <div class="diagnostic-stat">
                         <span class="stat-name">Data Freshness</span>
                         <span class="stat-value text-emerald" id="live-stat-freshness">--</span>
@@ -159,28 +207,139 @@
                     </div>
                     <div class="diagnostic-stat">
                         <span class="stat-name">Last Event Timestamp</span>
-                        <span class="stat-value" id="live-stat-event-time" style="font-size: 0.8rem;">--</span>
+                        <span class="stat-value mono-val" id="live-stat-event-time">--</span>
                     </div>
                     <div class="diagnostic-stat">
                         <span class="stat-name">PPO Feature Readiness</span>
-                        <span class="stat-value" id="live-stat-features">Checking...</span>
+                        <span class="stat-value text-cyan" id="live-stat-features">Checking...</span>
                     </div>
                 </div>
 
                 <!-- Feature Readiness Diagnostic Details -->
-                <div id="live-feature-alert" style="margin-top: 0.75rem; font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-muted); background: rgba(15, 23, 42, 0.6); padding: 0.75rem 1rem; border-radius: 6px; border-left: 3px solid var(--accent-indigo);">
+                <div id="live-feature-alert" class="feature-alert-box">
                     Timeframe status: Initializing...
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Interactive Market Visualization (Phase 10A) -->
-    <section class="chart-section" id="chart-section">
-        <div class="card chart-card" id="market-chart-card">
+    <!-- Real-Time RL Policy Signals -->
+    <section class="signals-section" id="signals-section">
+        <div class="card glass-card signals-card" id="rl-signals-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <span class="card-icon">📈</span>
+                    <div class="card-icon-badge icon-indigo">🤖</div>
+                    <div>
+                        <h2 class="card-title">Real-Time RL Policy Signals</h2>
+                        <span class="section-desc">Autonomous PPO reinforcement learning signals (BUY, SELL, HOLD) evaluated on completed bars with pre-trade risk gating.</span>
+                    </div>
+                </div>
+                <div class="header-badges">
+                    <span class="badge badge-indigo" id="signals-service-badge">
+                        Engine: Ready
+                    </span>
+                    <span class="badge badge-success" id="signals-timeframe-badge">
+                        Policy: Daily (1d)
+                    </span>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <!-- Live Signals Cards across Supported Assets -->
+                <div class="signals-grid" id="signals-cards-grid">
+                    <div class="signals-loading-card">
+                        <span class="loading-spinner"></span>
+                        <span>Loading real-time RL policy signals...</span>
+                    </div>
+                </div>
+
+                <!-- On-Demand Evaluation Controls -->
+                <div class="chart-toolbar eval-toolbar">
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Evaluate Asset:</span>
+                        <select id="eval-symbol-select" class="control-select">
+                            <option value="RELIANCE.NS">RELIANCE.NS</option>
+                            <option value="TCS.NS">TCS.NS</option>
+                            <option value="INFY.NS">INFY.NS</option>
+                            <option value="ICICIBANK.NS">ICICIBANK.NS</option>
+                            <option value="SBIN.NS">SBIN.NS</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Timeframe:</span>
+                        <select id="eval-interval-select" class="control-select">
+                            <option value="1d">1d (Compatible with PPO Model)</option>
+                            <option value="5m">5m (Intraday — Timeframe Mismatch Test)</option>
+                            <option value="1m">1m (Intraday — Timeframe Mismatch Test)</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-group">
+                        <button class="btn btn-primary btn-sm" id="btn-eval-signal" type="button">
+                            <span>⚡</span> Evaluate Signal
+                        </button>
+                    </div>
+
+                    <div id="eval-feedback" class="eval-feedback-msg"></div>
+                </div>
+
+                <!-- Signal History Feed Table -->
+                <div class="sub-table-header">
+                    <h3 class="sub-table-title">Recent Policy Signals Audit Feed</h3>
+                    <button class="btn btn-secondary btn-sm" id="btn-refresh-signals" type="button">
+                        <span>🔄</span> Refresh Feed
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table" id="signals-history-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp (UTC)</th>
+                                <th>Symbol</th>
+                                <th>Timeframe</th>
+                                <th>Proposed</th>
+                                <th>Effective Action</th>
+                                <th>Close Price</th>
+                                <th>Status</th>
+                                <th>Model &amp; Version</th>
+                                <th>Audit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="signals-table-body">
+                            <tr>
+                                <td colspan="9" class="empty-state">
+                                    <div class="empty-state-icon">⏳</div>
+                                    <div class="empty-state-text">Awaiting signal activity...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Signal Details Modal Backdrop -->
+    <div class="signal-modal-backdrop" id="signal-modal-backdrop">
+        <div class="signal-modal-dialog">
+            <div class="signal-modal-header">
+                <h3 class="signal-modal-title" id="modal-signal-title">Signal Audit Details</h3>
+                <button type="button" id="btn-close-signal-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+            <div id="modal-signal-body" class="signal-modal-content">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Market Visualization -->
+    <section class="chart-section" id="chart-section">
+        <div class="card glass-card chart-card" id="market-chart-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <div class="card-icon-badge icon-emerald">📈</div>
                     <div>
                         <h2 class="card-title">Interactive Market Visualization</h2>
                         <span class="section-desc">Responsive OHLCV candlestick playback, aligned volume, and institutional indicator overlays.</span>
@@ -223,9 +382,9 @@
                 <!-- Custom Date Range -->
                 <div class="toolbar-group">
                     <span class="toolbar-label">Range:</span>
-                    <input type="date" id="chart-start-date" class="control-input" style="padding: 0.35rem 0.5rem; font-size: 0.78rem;" />
-                    <span style="color: var(--text-muted); font-size: 0.8rem;">to</span>
-                    <input type="date" id="chart-end-date" class="control-input" style="padding: 0.35rem 0.5rem; font-size: 0.78rem;" />
+                    <input type="date" id="chart-start-date" class="control-input date-input" />
+                    <span class="range-separator">to</span>
+                    <input type="date" id="chart-end-date" class="control-input date-input" />
                     <button type="button" id="btn-apply-dates" class="btn btn-secondary btn-sm">Apply</button>
                 </div>
 
@@ -256,7 +415,7 @@
                     <span class="meta-ticker-price" id="chart-meta-price">--</span>
                     <span class="meta-ticker-change" id="chart-meta-change">--</span>
                 </div>
-                <div style="font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-mono);">
+                <div class="meta-ticker-details">
                     <span id="chart-meta-range">Loading range...</span> &bull; 
                     <span id="chart-meta-bars">0 bars</span>
                 </div>
@@ -286,10 +445,10 @@
 
     <!-- Historical Market Datasets Section -->
     <section class="datasets-section" id="datasets-section">
-        <div class="card" id="datasets-card">
+        <div class="card glass-card" id="datasets-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <span class="card-icon">📊</span>
+                    <div class="card-icon-badge icon-purple">📊</div>
                     <div>
                         <h2 class="card-title">Historical Market Datasets (NSE India)</h2>
                         <span class="section-desc">Persistent local OHLCV datasets with SHA-256 verification and atomic incremental updates.</span>
@@ -330,12 +489,12 @@
 
     <!-- Model Registry & PPO Policy Management Section -->
     <section class="models-section" id="models-section">
-        <div class="card" id="models-card">
+        <div class="card glass-card" id="models-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <span class="card-icon">🧠</span>
+                    <div class="card-icon-badge icon-indigo">🧠</div>
                     <div>
-                        <h2 class="card-title">PPO Model Registry & Policy Lifecycle</h2>
+                        <h2 class="card-title">PPO Model Registry &amp; Policy Lifecycle</h2>
                         <span class="section-desc">Audited RL policies, compatibility verification, approval gating, and safe rollback controls.</span>
                     </div>
                 </div>
@@ -378,9 +537,9 @@
         <div class="card glass-card" id="stock-bucket-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <span class="card-icon">🛒</span>
+                    <div class="card-icon-badge icon-cyan">🛒</div>
                     <div>
-                        <h2 class="card-title">Stock Bucket & Multi-Stock Portfolio Cart</h2>
+                        <h2 class="card-title">Stock Bucket &amp; Multi-Stock Portfolio Cart</h2>
                         <span class="section-desc">Select supported Indian NSE equities, configure target allocation weights, and create an isolated paper trading portfolio.</span>
                     </div>
                 </div>
@@ -396,34 +555,38 @@
             
             <div class="card-body">
                 <!-- Stock Selection Input Row -->
-                <div class="controls-row" style="margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
-                    <label for="bucket-stock-select" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Add Stock:</label>
-                    <select id="bucket-stock-select" class="control-select">
-                        <option value="RELIANCE.NS">RELIANCE.NS — Reliance Industries</option>
-                        <option value="TCS.NS">TCS.NS — Tata Consultancy Services</option>
-                        <option value="INFY.NS">INFY.NS — Infosys Limited</option>
-                        <option value="ICICIBANK.NS">ICICIBANK.NS — ICICI Bank</option>
-                        <option value="SBIN.NS">SBIN.NS — State Bank of India</option>
-                    </select>
-                    <button class="btn btn-primary btn-sm" id="btn-add-to-bucket" type="button">
-                        <span>➕</span> Add to Bucket
-                    </button>
+                <div class="controls-row bucket-controls-row">
+                    <div class="add-stock-group">
+                        <label for="bucket-stock-select" class="form-label-inline">Add Stock:</label>
+                        <select id="bucket-stock-select" class="control-select">
+                            <option value="RELIANCE.NS">RELIANCE.NS — Reliance Industries</option>
+                            <option value="TCS.NS">TCS.NS — Tata Consultancy Services</option>
+                            <option value="INFY.NS">INFY.NS — Infosys Limited</option>
+                            <option value="ICICIBANK.NS">ICICIBANK.NS — ICICI Bank</option>
+                            <option value="SBIN.NS">SBIN.NS — State Bank of India</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" id="btn-add-to-bucket" type="button">
+                            <span>➕</span> Add to Bucket
+                        </button>
+                    </div>
                     
-                    <div style="margin-left: auto; display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Allocation Mode:</span>
-                        <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; font-size: 0.85rem;">
-                            <input type="radio" name="allocation-mode" value="EQUAL_WEIGHT" checked id="radio-mode-equal">
-                            <span>Equal Weight</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; font-size: 0.85rem;">
-                            <input type="radio" name="allocation-mode" value="CUSTOM" id="radio-mode-custom">
-                            <span>Custom %</span>
-                        </label>
+                    <div class="allocation-mode-group">
+                        <span class="form-label-inline">Allocation Mode:</span>
+                        <div class="radio-pill-group">
+                            <label class="radio-pill-label">
+                                <input type="radio" name="allocation-mode" value="EQUAL_WEIGHT" checked id="radio-mode-equal">
+                                <span>Equal Weight</span>
+                            </label>
+                            <label class="radio-pill-label">
+                                <input type="radio" name="allocation-mode" value="CUSTOM" id="radio-mode-custom">
+                                <span>Custom %</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Bucket Items Table -->
-                <div class="table-responsive" style="margin-bottom: 1.25rem;">
+                <div class="table-responsive">
                     <table class="data-table" id="bucket-table">
                         <thead>
                             <tr>
@@ -441,43 +604,43 @@
                 </div>
 
                 <!-- Allocation Total & Status Bar -->
-                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--bg-card-border); border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">Total Target Allocation:</span>
-                        <span id="bucket-total-weight-text" style="font-size: 1.1rem; font-weight: 700; font-family: var(--font-mono); color: var(--accent-emerald);">100.0%</span>
+                <div class="bucket-status-bar">
+                    <div class="bucket-status-left">
+                        <span class="bucket-status-label">Total Target Allocation:</span>
+                        <span id="bucket-total-weight-text" class="bucket-total-number">100.0%</span>
                         <span id="bucket-weight-badge" class="badge badge-success">Valid (100%)</span>
                     </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted);" id="bucket-weight-hint">
+                    <div class="bucket-status-hint" id="bucket-weight-hint">
                         Bucket is a portfolio configuration cart — no actual holdings are purchased merely by adding to bucket.
                     </div>
                 </div>
 
                 <!-- Create Portfolio Form -->
-                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--bg-card-border); border-radius: 10px; padding: 1.25rem;">
-                    <h3 style="font-size: 1rem; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                <div class="portfolio-init-box">
+                    <h3 class="init-box-title">
                         <span>✨</span> Initialize Portfolio from Bucket
                     </h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 500;">Portfolio Name *</label>
-                            <input type="text" id="input-portfolio-name" class="control-input" placeholder="e.g. tech_momentum_v1" style="width: 100%;" required>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="input-portfolio-name" class="field-label">Portfolio Name *</label>
+                            <input type="text" id="input-portfolio-name" class="control-input" placeholder="e.g. tech_momentum_v1" required>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 500;">Initial Virtual Capital (INR) *</label>
-                            <input type="number" id="input-portfolio-capital" class="control-input" value="100000" min="1000" step="5000" style="width: 100%;" required>
+                        <div class="form-field">
+                            <label for="input-portfolio-capital" class="field-label">Initial Virtual Capital (INR) *</label>
+                            <input type="number" id="input-portfolio-capital" class="control-input" value="100000" min="1000" step="5000" required>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 500;">Strategy</label>
-                            <select id="select-portfolio-strategy" class="control-select" style="width: 100%;">
+                        <div class="form-field">
+                            <label for="select-portfolio-strategy" class="field-label">Strategy</label>
+                            <select id="select-portfolio-strategy" class="control-select">
                                 <option value="BUY_AND_HOLD">Buy and Hold (Rebalanced)</option>
                                 <option value="PPO_AGENT">PPO Reinforcement Learning Agent</option>
                                 <option value="CUSTOM_WEIGHTS">Custom Target Weights</option>
                                 <option value="MA_CROSSOVER">Moving Average Crossover</option>
                             </select>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem; font-weight: 500;">Risk Profile</label>
-                            <select id="select-portfolio-risk" class="control-select" style="width: 100%;">
+                        <div class="form-field">
+                            <label for="select-portfolio-risk" class="field-label">Risk Profile</label>
+                            <select id="select-portfolio-risk" class="control-select">
                                 <option value="MODERATE">Moderate (Max 15% Drawdown, 40% Pos)</option>
                                 <option value="CONSERVATIVE">Conservative (Max 10% Drawdown, 25% Pos)</option>
                                 <option value="AGGRESSIVE">Aggressive (Max 25% Drawdown, 60% Pos)</option>
@@ -485,10 +648,10 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-                        <span id="create-portfolio-msg" style="font-size: 0.85rem; color: var(--accent-rose); display: none;"></span>
-                        <button class="btn btn-success" id="btn-create-portfolio" type="button" style="margin-left: auto;">
-                            <span>🚀</span> Create & Activate Portfolio
+                    <div class="init-action-row">
+                        <span id="create-portfolio-msg" class="form-feedback-error"></span>
+                        <button class="btn btn-success" id="btn-create-portfolio" type="button">
+                            <span>🚀</span> Create &amp; Activate Portfolio
                         </button>
                     </div>
                 </div>
@@ -498,63 +661,93 @@
 
     <!-- Paper Trading & Simulation Gate Section -->
     <section class="simulation-section" id="simulation-section">
-        <div class="card" id="simulation-card">
+        <div class="card glass-card" id="simulation-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <span class="card-icon">📈</span>
+                    <div class="card-icon-badge icon-emerald">💼</div>
                     <div>
-                        <h2 class="card-title">Portfolio Dashboard & Simulation Risk Gate</h2>
+                        <h2 class="card-title">Portfolio Dashboard &amp; Simulation Risk Gate</h2>
                         <span class="section-desc">Multi-stock paper trading execution, live portfolio valuation, risk gate constraints, and performance tracking.</span>
                     </div>
                 </div>
             </div>
             <div class="card-body">
                 <!-- Portfolio Switcher & Management Bar -->
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--bg-card-border); padding: 0.85rem 1.25rem; border-radius: 8px;">
-                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-                        <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">Active Portfolio:</span>
-                        <select id="select-active-portfolio" class="control-select" style="min-width: 200px; font-weight: 600; color: var(--accent-cyan);"></select>
+                <div class="portfolio-switcher-bar">
+                    <div class="switcher-left">
+                        <span class="switcher-label">Active Portfolio:</span>
+                        <select id="select-active-portfolio" class="control-select switcher-select"></select>
+                        <span id="portfolio-paper-status-badge" class="badge badge-success">
+                            Auto-Trading: ACTIVE
+                        </span>
+                        <button class="btn btn-secondary btn-sm" id="btn-toggle-paper-trading" type="button" title="Pause or Resume Automated Paper Trading">
+                            <span>⏸️</span> Pause Auto-Trading
+                        </button>
                         <button class="btn btn-outline btn-sm" id="btn-delete-active-portfolio" type="button" title="Delete current custom portfolio">
                             <span>🗑️</span> Delete
                         </button>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="switcher-right">
                         <button class="btn btn-primary btn-sm" id="btn-rebalance-portfolio" type="button">
                             <span>🔄</span> Rebalance Portfolio
                         </button>
                     </div>
                 </div>
 
-                <!-- Portfolio Summary Metrics -->
-                <div class="diagnostics-grid" style="margin-bottom: 1.5rem;">
-                    <div class="diagnostic-stat">
-                        <span class="stat-name">Cash Balance</span>
-                        <span class="stat-value text-emerald" id="sim-cash">₹100,000.00</span>
+                <!-- Hero Portfolio Valuation & Summary Cards (Inspired by Reference Design) -->
+                <div class="portfolio-hero-grid">
+                    <!-- Hero Valuation Card -->
+                    <div class="hero-valuation-card">
+                        <div class="valuation-header">
+                            <span class="valuation-caption">Total Portfolio Value (NAV)</span>
+                            <span class="valuation-currency-tag">INR • Paper Simulation</span>
+                        </div>
+                        <div class="valuation-number" id="sim-total-value">
+                            ₹100,000.00
+                        </div>
+                        <div class="valuation-delta-row">
+                            <span class="valuation-delta-pill" id="sim-total-pnl">
+                                +₹0.00 (0.00%)
+                            </span>
+                            <span class="valuation-benchmark-text">vs initial capital</span>
+                        </div>
                     </div>
-                    <div class="diagnostic-stat">
-                        <span class="stat-name">Total Portfolio Value</span>
-                        <span class="stat-value text-indigo" id="sim-total-value">₹100,000.00</span>
-                    </div>
-                    <div class="diagnostic-stat">
-                        <span class="stat-name">Total Return (P&L)</span>
-                        <span class="stat-value" id="sim-total-pnl">₹0.00 (0.00%)</span>
-                    </div>
-                    <div class="diagnostic-stat">
-                        <span class="stat-name">Peak Value / Drawdown</span>
-                        <span class="stat-value text-cyan" id="sim-peak-dd">₹100,000.00 (0.0%)</span>
+
+                    <!-- Cash Balance & Drawdown Pods -->
+                    <div class="valuation-sub-grid">
+                        <div class="sub-pod">
+                            <div class="pod-header">
+                                <span class="pod-label">Virtual Cash Balance</span>
+                                <span class="pod-icon">💵</span>
+                            </div>
+                            <div class="pod-value text-emerald" id="sim-cash">₹100,000.00</div>
+                            <div class="pod-subtext">Unallocated liquidity buffer</div>
+                        </div>
+
+                        <div class="sub-pod">
+                            <div class="pod-header">
+                                <span class="pod-label">Peak Value &amp; Max Drawdown</span>
+                                <span class="pod-icon">📉</span>
+                            </div>
+                            <div class="pod-value text-cyan" id="sim-peak-dd">₹100,000.00 (0.0%)</div>
+                            <div class="pod-subtext">Protective circuit breaker active</div>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Hidden element to satisfy main.js simHolding reference if queried -->
+                <span id="sim-holding" style="display: none;"></span>
+
                 <!-- Portfolio Equity Curve Chart -->
-                <div id="portfolio-equity-card" style="margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--bg-card-border); border-radius: 10px; padding: 1.25rem;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                        <h3 style="font-size: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
-                            <span>📈</span> Portfolio Valuation & Equity Curve
+                <div id="portfolio-equity-card" class="portfolio-equity-box">
+                    <div class="equity-box-header">
+                        <h3 class="equity-box-title">
+                            <span>📈</span> Portfolio Valuation &amp; Equity Curve
                         </h3>
                         <span id="equity-curve-badge" class="badge badge-neutral">Mark-to-Market</span>
                     </div>
-                    <div id="portfolio-equity-chart" style="height: 240px; width: 100%;">
-                        <div class="empty-state" style="padding: 2.5rem 1rem;">
+                    <div id="portfolio-equity-chart" class="equity-chart-plot">
+                        <div class="empty-state">
                             <div class="empty-state-icon">⏳</div>
                             <div class="empty-state-text">No valuation snapshots recorded yet for this portfolio. Click 'Rebalance Portfolio' or 'Execute Simulation Step' to start.</div>
                         </div>
@@ -562,8 +755,8 @@
                 </div>
 
                 <!-- Bucket vs Actual Holdings Allocation Table -->
-                <div style="margin-bottom: 1.5rem;">
-                    <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.5rem;">
+                <div class="holdings-section-wrapper">
+                    <h3 class="sub-table-title">
                         <span>📊</span> Target Bucket vs Actual Holdings Allocation
                     </h3>
                     <div class="table-responsive">
@@ -576,7 +769,7 @@
                                     <th>Market Price</th>
                                     <th>Current Value</th>
                                     <th>Actual Weight</th>
-                                    <th>Unrealized P&L</th>
+                                    <th>Unrealized P&amp;L</th>
                                 </tr>
                             </thead>
                             <tbody id="holdings-table-body">
@@ -592,8 +785,8 @@
                 </div>
 
                 <!-- Simulation Step Controls -->
-                <div class="controls-row" style="margin-bottom: 1.5rem;">
-                    <label for="select-sim-symbol" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Inference Symbol:</label>
+                <div class="controls-row sim-step-controls">
+                    <label for="select-sim-symbol" class="form-label-inline">Inference Symbol:</label>
                     <select id="select-sim-symbol" class="control-select">
                         <option value="RELIANCE.NS">RELIANCE.NS (Reliance Industries)</option>
                         <option value="TCS.NS">TCS.NS (Tata Consultancy Services)</option>
@@ -605,15 +798,15 @@
                     <button class="btn btn-success btn-sm" id="btn-run-sim-step" type="button">
                         <span>▶️</span> Execute Single-Asset PPO Step
                     </button>
-                    <span id="sim-spinner" style="display: none; font-size: 0.85rem; color: var(--text-muted);">Executing pipeline...</span>
+                    <span id="sim-spinner" class="sim-spinner-text" style="display: none;">Executing pipeline...</span>
                 </div>
 
                 <!-- Latest Step Outcome Telemetry -->
-                <div id="step-outcome-card" style="display: none; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem;">
-                    <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                <div id="step-outcome-card" class="step-outcome-box" style="display: none;">
+                    <h3 class="step-outcome-title">
                         <span>📋</span> Latest Step Telemetry
                     </h3>
-                    <div class="diagnostics-grid" style="margin-bottom: 0.75rem;">
+                    <div class="diagnostics-grid outcome-grid">
                         <div class="diagnostic-stat">
                             <span class="stat-name">PPO Action</span>
                             <span class="stat-value" id="outcome-ppo-action">--</span>
@@ -631,11 +824,13 @@
                             <span class="stat-value text-cyan" id="outcome-regime">--</span>
                         </div>
                     </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);" id="outcome-details"></div>
+                    <div class="outcome-details-text" id="outcome-details"></div>
                 </div>
 
                 <!-- Recent Trades Table -->
-                <h3 style="font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--text-secondary);">Simulated Trade History</h3>
+                <div class="sub-table-header">
+                    <h3 class="sub-table-title">Simulated Trade History</h3>
+                </div>
                 <div class="table-responsive">
                     <table class="data-table" id="trades-table">
                         <thead>
@@ -648,13 +843,14 @@
                                 <th>Gross Value</th>
                                 <th>Fee</th>
                                 <th>Risk Gate Status</th>
+                                <th>Signal Linkage</th>
                             </tr>
                         </thead>
                         <tbody id="trades-table-body">
                             <tr>
-                                <td colspan="8" class="empty-state">
+                                <td colspan="9" class="empty-state">
                                     <div class="empty-state-icon">📝</div>
-                                    <div class="empty-state-text">No simulated trades recorded yet. Click 'Execute Simulation Step' to run inference.</div>
+                                    <div class="empty-state-text">No simulated trades recorded yet. Click 'Execute Simulation Step' or evaluate PPO signals to trigger automated paper trading.</div>
                                 </td>
                             </tr>
                         </tbody>
@@ -662,7 +858,9 @@
                 </div>
 
                 <!-- Risk Intervention Events Table -->
-                <h3 style="font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--text-secondary);">Risk Engine Audit Events</h3>
+                <div class="sub-table-header">
+                    <h3 class="sub-table-title">Risk Engine Audit Events</h3>
+                </div>
                 <div class="table-responsive">
                     <table class="data-table" id="risk-events-table">
                         <thead>
@@ -694,24 +892,28 @@
     <section class="modules-section" id="modules-section">
         <div class="section-header">
             <h2 class="section-title">Platform Architecture Modules</h2>
-            <p class="section-desc">Integrated components connected across the TradeMind AI system.</p>
+            <p class="section-desc">Integrated modular components running within the TradeMind AI system.</p>
         </div>
 
         <div class="modules-grid">
-            <div class="card module-card" id="module-backend">
-                <div class="module-icon">⚙️</div>
-                <h3 class="module-name">backend/app</h3>
+            <div class="card glass-card module-card" id="module-backend">
+                <div class="module-header">
+                    <div class="card-icon-badge icon-indigo">⚙️</div>
+                    <h3 class="module-name">backend/app</h3>
+                </div>
                 <p class="module-desc">Modular Flask application factory with SQLAlchemy database models, RESTful APIs, and health diagnostics.</p>
                 <div class="module-tags">
-                    <span class="tag">Flask</span>
+                    <span class="tag">Flask 3.x</span>
                     <span class="tag">SQLAlchemy</span>
                     <span class="tag">REST APIs</span>
                 </div>
             </div>
 
-            <div class="card module-card" id="module-data">
-                <div class="module-icon">💾</div>
-                <h3 class="module-name">data/raw & data/processed</h3>
+            <div class="card glass-card module-card" id="module-data">
+                <div class="module-header">
+                    <div class="card-icon-badge icon-cyan">💾</div>
+                    <h3 class="module-name">data/raw &amp; data/processed</h3>
+                </div>
                 <p class="module-desc">Deterministic 2016–2025 NSE historical records with atomic updates, SHA-256 checksums, and validation pipelines.</p>
                 <div class="module-tags">
                     <span class="tag">Pandas</span>
@@ -720,9 +922,11 @@
                 </div>
             </div>
 
-            <div class="card module-card" id="module-models">
-                <div class="module-icon">🧠</div>
-                <h3 class="module-name">models/ & Registry</h3>
+            <div class="card glass-card module-card" id="module-models">
+                <div class="module-header">
+                    <div class="card-icon-badge icon-purple">🧠</div>
+                    <h3 class="module-name">models/ &amp; Registry</h3>
+                </div>
                 <p class="module-desc">Audited PPO model registry tracking candidate/approved policies, observation schemas, and rollback points.</p>
                 <div class="module-tags">
                     <span class="tag">SB3 PPO</span>
@@ -731,9 +935,11 @@
                 </div>
             </div>
 
-            <div class="card module-card" id="module-risk">
-                <div class="module-icon">🛡️</div>
-                <h3 class="module-name">backend/app/risk</h3>
+            <div class="card glass-card module-card" id="module-risk">
+                <div class="module-header">
+                    <div class="card-icon-badge icon-emerald">🛡️</div>
+                    <h3 class="module-name">backend/app/risk</h3>
+                </div>
                 <p class="module-desc">Deterministic pre-trade risk engine enforcing position limits, exposure constraints, drawdowns, and audit logging.</p>
                 <div class="module-tags">
                     <span class="tag">Risk Gate</span>
@@ -742,9 +948,11 @@
                 </div>
             </div>
 
-            <div class="card module-card" id="module-instance">
-                <div class="module-icon">🗄️</div>
-                <h3 class="module-name">instance/trademind.db</h3>
+            <div class="card glass-card module-card" id="module-instance">
+                <div class="module-header">
+                    <div class="card-icon-badge icon-amber">🗄️</div>
+                    <h3 class="module-name">instance/trademind.db</h3>
+                </div>
                 <p class="module-desc">Persistent SQLite database for asset records, backtest runs, trade ledgers, model registry, and paper portfolios.</p>
                 <div class="module-tags">
                     <span class="tag">SQLite</span>
@@ -753,9 +961,11 @@
                 </div>
             </div>
 
-            <div class="card module-card" id="module-tests">
-                <div class="module-icon">🧪</div>
-                <h3 class="module-name">tests/ (221 Tests Passing)</h3>
+            <div class="card glass-card module-card" id="module-tests">
+                <div class="module-header">
+                    <div class="card-icon-badge icon-indigo">🧪</div>
+                    <h3 class="module-name">tests/ (340 Passing)</h3>
+                </div>
                 <p class="module-desc">Exhaustive automated test suite covering end-to-end integration, failure modes, data immutability, and risk logic.</p>
                 <div class="module-tags">
                     <span class="tag">Pytest</span>

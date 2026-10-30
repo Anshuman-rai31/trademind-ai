@@ -56,6 +56,6 @@ def api_error(
 
 
 # Import sub-modules to register endpoints onto api_bp
-from . import agent, assets, backtests, dashboard, health, models, realtime, regime, risk, trading  # noqa: E402, F401
+from . import agent, assets, backtests, dashboard, health, models, realtime, regime, risk, signals, trading  # noqa: E402, F401
 
 

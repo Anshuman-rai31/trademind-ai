@@ -241,3 +241,116 @@ def list_risk_events():
         data=[e.to_dict() for e in events],
         meta={"count": len(events), "total_count": total_count, "page": page, "total_pages": total_pages},
     )
+
+
+# =============================================================================
+# Phase 13: Automated Paper Trading Engine Endpoints
+# =============================================================================
+
+def get_paper_service():
+    """Helper to retrieve PaperTradingService singleton."""
+    from ...services.paper_trading_service import PaperTradingService
+    return PaperTradingService.get_instance()
+
+
+@api_bp.route("/trading/portfolios/<name_or_id>/start", methods=["POST"])
+def start_portfolio_paper_trading(name_or_id: str):
+    """Enable automated paper trading for a portfolio."""
+    service = get_paper_service()
+    success = service.enable_paper_trading(name_or_id)
+    if not success:
+        return api_error(message=f"Portfolio '{name_or_id}' not found.", code="NOT_FOUND", status_code=404)
+    return api_response(
+        data={"portfolio": name_or_id, "is_active": True},
+        meta={"message": f"Automated paper trading started for portfolio '{name_or_id}'."},
+    )
+
+
+@api_bp.route("/trading/portfolios/<name_or_id>/stop", methods=["POST"])
+def stop_portfolio_paper_trading(name_or_id: str):
+    """Pause automated paper trading for a portfolio."""
+    service = get_paper_service()
+    success = service.disable_paper_trading(name_or_id)
+    if not success:
+        return api_error(message=f"Portfolio '{name_or_id}' not found.", code="NOT_FOUND", status_code=404)
+    return api_response(
+        data={"portfolio": name_or_id, "is_active": False},
+        meta={"message": f"Automated paper trading paused for portfolio '{name_or_id}'."},
+    )
+
+
+@api_bp.route("/trading/portfolios/<name_or_id>/status", methods=["GET"])
+def get_portfolio_paper_status(name_or_id: str):
+    """Retrieve paper-trading status, active state, cash, exposure, and performance."""
+    service = get_paper_service()
+    status = service.get_portfolio_status(name_or_id)
+    if not status:
+        return api_error(message=f"Portfolio '{name_or_id}' not found.", code="NOT_FOUND", status_code=404)
+    return api_response(data=status)
+
+
+@api_bp.route("/trading/portfolios/<name_or_id>/positions", methods=["GET"])
+def get_portfolio_positions(name_or_id: str):
+    """Retrieve active open positions and market values for a portfolio."""
+    service = get_paper_service()
+    positions = service.get_positions(name_or_id)
+    return api_response(data=positions, meta={"count": len(positions)})
+
+
+@api_bp.route("/trading/portfolios/<name_or_id>/trades", methods=["GET"])
+def get_portfolio_trades(name_or_id: str):
+    """Retrieve paginated trade execution history for a portfolio."""
+    service = get_paper_service()
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+        limit = min(100, max(1, int(request.args.get("limit", 20))))
+    except ValueError:
+        return api_error(message="page and limit must be positive integers.", status_code=400)
+
+    trades_data = service.get_trades(name_or_id, page=page, limit=limit)
+    return api_response(
+        data=trades_data["trades"],
+        meta={
+            "count": len(trades_data["trades"]),
+            "total_count": trades_data["total"],
+            "page": trades_data["page"],
+            "total_pages": trades_data["total_pages"],
+        },
+    )
+
+
+@api_bp.route("/trading/signals/<signal_id>/trade", methods=["GET"])
+def get_signal_trade_lineage(signal_id: str):
+    """Retrieve executed simulated trade associated with a specific PPO signal_id."""
+    service = get_paper_service()
+    trade = service.get_trade_by_signal_id(signal_id)
+    if not trade:
+        return api_error(
+            message=f"No executed paper trade found for signal '{signal_id}'.",
+            code="NOT_FOUND",
+            status_code=404,
+        )
+    return api_response(data=trade)
+
+
+@api_bp.route("/trading/execute-signal", methods=["POST"])
+def execute_signal_manually():
+    """Explicitly execute a validated signal against a portfolio."""
+    payload = request.get_json(silent=True) or {}
+    signal_ref = payload.get("signal_id") or payload.get("signal")
+    if not signal_ref:
+        return api_error(message="Field 'signal_id' or 'signal' is required.", code="MISSING_PARAM", status_code=400)
+
+    portfolio_ref = payload.get("portfolio") or payload.get("portfolio_id")
+    service = get_paper_service()
+
+    result = service.process_signal(signal=signal_ref, portfolio_name_or_id=portfolio_ref)
+    return api_response(data=result)
+
+
+@api_bp.route("/trading/engine/health", methods=["GET"])
+def get_trading_engine_health():
+    """Retrieve paper-trading execution engine health, transaction costs, and telemetry."""
+    service = get_paper_service()
+    health = service.get_engine_health()
+    return api_response(data=health)

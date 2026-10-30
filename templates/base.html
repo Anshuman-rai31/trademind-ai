@@ -9,44 +9,125 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=14.0">
 </head>
-<body>
+<body class="trademind-app">
+    <!-- Top Application Bar -->
     <header class="navbar" id="app-navbar">
         <div class="nav-container">
-            <a href="{{ url_for('main.index') }}" class="brand-logo" id="brand-logo">
-                <span class="logo-symbol">◈</span>
-                <span class="logo-text">Trade<span class="logo-accent">Mind</span></span>
-            </a>
+            <div class="nav-brand-group">
+                <a href="{{ url_for('main.index') }}" class="brand-logo" id="brand-logo">
+                    <span class="logo-symbol">◈</span>
+                    <span class="logo-text">Trade<span class="logo-accent">Mind</span></span>
+                </a>
+                <span class="nav-tagline">QUANT RESEARCH & SIMULATION</span>
+            </div>
+
+            <!-- Global Search & Filter Pill -->
+            <div class="nav-search-wrapper" id="global-search-container">
+                <span class="nav-search-icon">🔍</span>
+                <input type="text" id="global-search-input" class="nav-search-input" placeholder="Search assets, policies, portfolios..." autocomplete="off">
+                <span class="nav-search-kbd">/</span>
+            </div>
             
             <div class="nav-status-group">
+                <!-- Environment / Trading Mode Badge -->
+                <div class="nav-mode-pill" id="env-mode-pill" title="Deterministic Simulation Environment">
+                    <span class="mode-dot"></span>
+                    <span class="mode-text">Paper Trading Mode</span>
+                </div>
+
+                <!-- Clock UTC Pill -->
+                <div class="nav-clock-pill" id="header-clock" title="Coordinated Universal Time (UTC)">
+                    UTC --:--:--
+                </div>
+
+                <!-- Live Health Status Indicator -->
                 <div class="status-indicator" id="header-status-indicator">
                     <span class="pulse-dot" id="header-pulse-dot"></span>
                     <span class="status-label" id="header-status-text">System Active</span>
                 </div>
+                
                 <div class="badge-phase" id="phase-badge">{{ phase }}</div>
             </div>
         </div>
     </header>
 
-    <main class="main-content" id="main-content">
-        {% block content %}{% endblock %}
-    </main>
+    <!-- App Shell Wrapper with Slim Left Nav Rail -->
+    <div class="app-layout-shell" id="app-layout-shell">
+        <!-- Slim Left Navigation Rail -->
+        <aside class="nav-rail" id="app-sidebar" aria-label="Dashboard Navigation">
+            <div class="nav-rail-inner">
+                <div class="nav-rail-group">
+                    <a href="#hero-section" class="rail-item active" data-section="hero-section" title="Platform Overview">
+                        <span class="rail-icon">◈</span>
+                        <span class="rail-tooltip">Overview</span>
+                    </a>
+                    <a href="#diagnostics-section" class="rail-item" data-section="diagnostics-section" title="System Diagnostics">
+                        <span class="rail-icon">⚡</span>
+                        <span class="rail-tooltip">Diagnostics</span>
+                    </a>
+                    <a href="#live-market-section" class="rail-item" data-section="live-market-section" title="Live Market Feed">
+                        <span class="rail-icon">📡</span>
+                        <span class="rail-tooltip">Live Feed</span>
+                    </a>
+                    <a href="#signals-section" class="rail-item" data-section="signals-section" title="RL Policy Signals">
+                        <span class="rail-icon">🤖</span>
+                        <span class="rail-tooltip">RL Signals</span>
+                    </a>
+                    <a href="#chart-section" class="rail-item" data-section="chart-section" title="Market Visualization">
+                        <span class="rail-icon">📈</span>
+                        <span class="rail-tooltip">Market Chart</span>
+                    </a>
+                    <a href="#bucket-section" class="rail-item" data-section="bucket-section" title="Stock Bucket Cart">
+                        <span class="rail-icon">🛒</span>
+                        <span class="rail-tooltip">Stock Bucket</span>
+                    </a>
+                    <a href="#simulation-section" class="rail-item" data-section="simulation-section" title="Portfolio & Risk Gate">
+                        <span class="rail-icon">💼</span>
+                        <span class="rail-tooltip">Portfolio Gate</span>
+                    </a>
+                    <a href="#datasets-section" class="rail-item" data-section="datasets-section" title="NSE Datasets">
+                        <span class="rail-icon">📊</span>
+                        <span class="rail-tooltip">Datasets</span>
+                    </a>
+                    <a href="#models-section" class="rail-item" data-section="models-section" title="Model Registry">
+                        <span class="rail-icon">🧠</span>
+                        <span class="rail-tooltip">Model Registry</span>
+                    </a>
+                    <a href="#modules-section" class="rail-item" data-section="modules-section" title="Architecture Modules">
+                        <span class="rail-icon">⚙️</span>
+                        <span class="rail-tooltip">Architecture</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
 
+        <!-- Main Content Area -->
+        <main class="main-content" id="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- App Footer -->
     <footer class="app-footer" id="app-footer">
         <div class="footer-container">
             <div class="footer-left">
                 <p class="footer-brand"><strong>TradeMind</strong> &bull; Quantitative Research & Simulation Platform</p>
-                <p class="footer-meta">Environment: <span class="text-accent">{{ env }}</span> &bull; Version: <span>{{ version }}</span></p>
+                <p class="footer-meta">Environment: <span class="text-accent">{{ env }}</span> &bull; Version: <span>{{ version }}</span> &bull; Engine: <span>PyTorch &bull; Stable-Baselines3 &bull; Flask</span></p>
             </div>
             <div class="footer-right">
+                <span class="footer-notice">🛡️ Simulated Research Only &bull; Zero Live Capital Risk</span>
                 <a href="{{ url_for('health.check_health') }}" class="footer-link" id="footer-health-link" target="_blank">Health Check API</a>
             </div>
         </div>
     </footer>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
@@ -55,6 +136,6 @@
         document.write('<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"><\/script>');
     }
     </script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=14.0"></script>
 </body>
 </html>

@@ -599,11 +599,42 @@ class TradingPipelineService:
         portfolio = self.get_portfolio(name_or_id)
         if not portfolio:
             return []
-        return (
+        records = (
             PaperSnapshotRecord.query.filter_by(portfolio_id=portfolio.id)
             .order_by(PaperSnapshotRecord.id.asc())
             .all()
         )
+        if not records:
+            init_val = float(portfolio.initial_cash or 100000.0)
+            curr_val = float(portfolio.portfolio_value or init_val)
+            created_str = (portfolio.created_at.isoformat() if hasattr(portfolio.created_at, "isoformat") else str(portfolio.created_at)) if portfolio.created_at else datetime.now(timezone.utc).isoformat()
+            now_str = datetime.now(timezone.utc).isoformat()
+
+            s1 = PaperSnapshotRecord(
+                portfolio_id=portfolio.id,
+                timestamp=created_str,
+                cash=init_val,
+                holdings_value=0.0,
+                portfolio_value=init_val,
+                drawdown=0.0,
+            )
+            s2 = PaperSnapshotRecord(
+                portfolio_id=portfolio.id,
+                timestamp=now_str,
+                cash=float(portfolio.cash or init_val),
+                holdings_value=float(getattr(portfolio, "holdings_value", 0.0) or 0.0),
+                portfolio_value=curr_val,
+                drawdown=0.0,
+            )
+            try:
+                db.session.add(s1)
+                db.session.add(s2)
+                db.session.commit()
+                records = [s1, s2]
+            except Exception:
+                db.session.rollback()
+                records = [s1]
+        return records
 
     def rebalance_portfolio(
         self,

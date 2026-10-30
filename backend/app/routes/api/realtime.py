@@ -17,15 +17,19 @@ from . import api_bp, api_error, api_response
 
 def get_realtime_manager() -> RealtimeMarketDataManager:
     """Helper to retrieve or initialize the real-time manager with application config."""
+    default_prov = "kite" if current_app.config.get("KITE_API_KEY") else "mock"
     cfg = ProviderConfig(
-        provider_name=current_app.config.get("REALTIME_PROVIDER", "kite"),
+        provider_name=current_app.config.get("REALTIME_PROVIDER", default_prov),
         api_key=current_app.config.get("KITE_API_KEY"),
         access_token=current_app.config.get("KITE_ACCESS_TOKEN"),
         max_subscriptions=current_app.config.get("REALTIME_MAX_SUBSCRIPTIONS", 50),
         stale_timeout_seconds=current_app.config.get("REALTIME_STALE_TIMEOUT_SECONDS", 15.0),
         reconnect_max_retries=current_app.config.get("REALTIME_RECONNECT_MAX_RETRIES", 5),
     )
-    return RealtimeMarketDataManager.get_instance(config=cfg)
+    mgr = RealtimeMarketDataManager.get_instance(config=cfg)
+    from ...signals.service import RealtimeSignalService
+    mgr.attach_signal_service(RealtimeSignalService.get_instance())
+    return mgr
 
 
 @api_bp.route("/realtime/status", methods=["GET"])
@@ -59,8 +63,28 @@ def get_realtime_health():
 @api_bp.route("/realtime/connect", methods=["POST"])
 def connect_realtime():
     """Initiate connection to the real-time market data provider."""
+    body = request.get_json(silent=True) or {}
+    requested_prov = body.get("provider")
     manager = get_realtime_manager()
+
+    if requested_prov:
+        if requested_prov.lower() == "mock":
+            from ...realtime.mock_provider import MockRealtimeProvider
+            mock_prov = MockRealtimeProvider(config=manager.config, validator=manager.validator, auto_tick_generation=True)
+            manager.set_provider(mock_prov)
+        elif requested_prov.lower() == "kite":
+            from ...realtime.kite_provider import KiteRealtimeProvider
+            kite_prov = KiteRealtimeProvider(config=manager.config, validator=manager.validator)
+            manager.set_provider(kite_prov)
+    elif manager.config.provider_name.lower() == "kite" and not manager.config.has_credentials():
+        from ...realtime.mock_provider import MockRealtimeProvider
+        mock_prov = MockRealtimeProvider(config=manager.config, validator=manager.validator, auto_tick_generation=True)
+        manager.set_provider(mock_prov)
+
     success = manager.connect()
+    auto_symbols = body.get("symbols")
+    if success and auto_symbols and isinstance(auto_symbols, list):
+        manager.subscribe(auto_symbols)
     telemetry = manager.get_telemetry()
 
     if not success:
@@ -74,6 +98,8 @@ def connect_realtime():
     return api_response(data={
         "connected": True,
         "status": telemetry.status.value,
+        "provider": telemetry.provider_name,
+        "subscriptions": manager.get_subscribed_symbols(),
         "telemetry": telemetry.to_dict(),
     })
 

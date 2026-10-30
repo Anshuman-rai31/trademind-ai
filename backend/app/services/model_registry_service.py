@@ -258,10 +258,22 @@ class ModelRegistryService:
         clean_sym = validate_symbol(symbol)
         model_rec = self.get_active_model(clean_sym)
         if not model_rec:
-            # Fallback: check if an approved model exists
+            # Fallback 1: check if an approved model exists for this symbol
             model_rec = (
                 RegisteredModel.query.filter_by(symbol=clean_sym, status="approved")
                 .order_by(RegisteredModel.id.desc())
+                .first()
+            )
+
+        if not model_rec:
+            # Fallback 2: check if any active model exists across symbols
+            model_rec = RegisteredModel.query.filter_by(is_active=True).first()
+
+        if not model_rec:
+            # Fallback 3: check if any approved baseline PPO model exists in registry
+            model_rec = (
+                RegisteredModel.query.filter_by(status="approved")
+                .order_by(RegisteredModel.id.asc())
                 .first()
             )
 

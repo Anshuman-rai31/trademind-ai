@@ -19,13 +19,29 @@ from sqlalchemy.engine import Engine
 
 db = SQLAlchemy()
 
+_app_instance: Optional[Flask] = None
+
+
+def register_flask_app(app: Flask) -> None:
+    """Register active Flask application instance for background worker contexts."""
+    global _app_instance
+    _app_instance = app
+
+
+def get_flask_app() -> Optional[Flask]:
+    """Retrieve registered Flask application instance."""
+    global _app_instance
+    return _app_instance
+
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
-    """Enforce SQLite foreign key constraints and journaling performance."""
+    """Enforce SQLite foreign key constraints, WAL journaling, and busy timeout."""
     try:
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=5000")
         cursor.close()
     except Exception:
         # Non-SQLite or in-memory dialect fallback
@@ -189,6 +205,40 @@ def seed_default_portfolio(app: Flask) -> None:
             app.logger.warning("Failed to seed default simulation portfolio: %s", exc)
 
 
+def _run_sqlite_column_migrations(app: Flask) -> None:
+    """Ensure newly introduced columns exist in SQLite database if created by earlier phases."""
+    from sqlalchemy import text
+    try:
+        with db.engine.connect() as conn:
+            # Check paper_portfolios columns
+            res = conn.execute(text("PRAGMA table_info(paper_portfolios);")).fetchall()
+            existing_cols = {row[1] for row in res} if res else set()
+
+            if existing_cols:
+                if "allocation_method" not in existing_cols:
+                    conn.execute(text("ALTER TABLE paper_portfolios ADD COLUMN allocation_method VARCHAR(30) DEFAULT 'EQUAL_WEIGHT';"))
+                if "strategy_type" not in existing_cols:
+                    conn.execute(text("ALTER TABLE paper_portfolios ADD COLUMN strategy_type VARCHAR(50) DEFAULT 'BUY_AND_HOLD';"))
+                if "risk_config_json" not in existing_cols:
+                    conn.execute(text("ALTER TABLE paper_portfolios ADD COLUMN risk_config_json TEXT;"))
+                if "description" not in existing_cols:
+                    conn.execute(text("ALTER TABLE paper_portfolios ADD COLUMN description TEXT;"))
+                if "user_id" not in existing_cols:
+                    conn.execute(text("ALTER TABLE paper_portfolios ADD COLUMN user_id VARCHAR(50);"))
+                if "is_active" not in existing_cols:
+                    conn.execute(text("ALTER TABLE paper_portfolios ADD COLUMN is_active BOOLEAN DEFAULT 1;"))
+                conn.commit()
+
+            # Check paper_trades columns
+            res_trades = conn.execute(text("PRAGMA table_info(paper_trades);")).fetchall()
+            existing_trade_cols = {row[1] for row in res_trades} if res_trades else set()
+            if existing_trade_cols and "signal_id" not in existing_trade_cols:
+                conn.execute(text("ALTER TABLE paper_trades ADD COLUMN signal_id VARCHAR(40);"))
+                conn.commit()
+    except Exception as exc:
+        app.logger.warning("Migration check error (non-fatal): %s", exc)
+
+
 def init_db(app: Flask) -> None:
     """Initialize database tables and seed baseline reference assets and default portfolio."""
     # Explicitly import all models so SQLAlchemy metadata registers all tables
@@ -205,8 +255,10 @@ def init_db(app: Flask) -> None:
         PortfolioBucketItem,
         RiskEventRecord,
     )
+    from .models.trading_signal import RLTradingSignal  # noqa: F401
 
     with app.app_context():
         db.create_all()
+        _run_sqlite_column_migrations(app)
         seed_default_assets(app)
         seed_default_portfolio(app)

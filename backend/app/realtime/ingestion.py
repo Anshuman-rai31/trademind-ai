@@ -74,24 +74,14 @@ class LiveMarketDataIngestionService:
                 self._consumers.remove(consumer)
 
     def ingest_quote(self, quote: MarketQuote) -> Tuple[bool, Optional[str]]:
-        """Ingest and validate an already-structured MarketQuote.
+        """Ingest an already-structured MarketQuote directly into the ingestion processing pipeline.
         
         Returns:
             Tuple of (accepted: bool, rejection_reason: Optional[str]).
         """
-        raw_msg = {
-            "symbol": quote.symbol,
-            "last_price": quote.last_price,
-            "timestamp": quote.timestamp,
-            "volume": quote.volume,
-            "open": quote.open_price,
-            "high": quote.high_price,
-            "low": quote.low_price,
-            "close": quote.close_price,
-            "bid": quote.bid_price,
-            "ask": quote.ask_price,
-        }
-        return self.ingest_raw_message(raw_msg, source=quote.source, symbol_override=quote.symbol)
+        if not isinstance(quote, MarketQuote):
+            return False, "Expected MarketQuote instance."
+        return self._process_validated_quote(quote)
 
     def ingest_raw_message(
         self,
@@ -120,6 +110,11 @@ class LiveMarketDataIngestionService:
                     self._total_rejected += 1
                 return False, f"Validation failed: {err}"
 
+        return self._process_validated_quote(validated_quote)
+
+    def _process_validated_quote(self, validated_quote: MarketQuote) -> Tuple[bool, Optional[str]]:
+        """Deduplicate, check ordering, cache, and dispatch a validated MarketQuote."""
+        with self._lock:
             sym = validated_quote.symbol
             price = validated_quote.last_price
             ts_str = validated_quote.timestamp

@@ -13,6 +13,7 @@ from .paper_trading import (
     PortfolioBucketItem,
     RiskEventRecord,
 )
+from .trading_signal import RLTradingSignal
 
 __all__ = [
     "Asset",
@@ -28,5 +29,6 @@ __all__ = [
     "PortfolioBucketItem",
     "PaperSnapshotRecord",
     "MarketCandle",
+    "RLTradingSignal",
 ]
 
